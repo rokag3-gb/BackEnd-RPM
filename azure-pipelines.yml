@@ -6,7 +6,7 @@ trigger:
 variables:
   TargetFramework: 'net6.0'
   BuildConfiguration: 'Release'
-  DockerImageName: 'asia-northeast3-docker.pkg.dev/rpm-2023/rpmapp/api'
+  DockerImageName: 'asia-northeast3-docker.pkg.dev/rpm-2023/rpmapp'
   latestTag: "latest"
   tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
 
