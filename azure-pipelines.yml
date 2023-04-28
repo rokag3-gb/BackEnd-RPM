@@ -11,6 +11,10 @@ variables:
   tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
 
 steps:
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
 - task: Docker@2
   displayName: 'Login to Container Registry'
   inputs:
@@ -25,7 +29,3 @@ steps:
     tags: |
       $(latestTag)
       $(tag)
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact'
-  inputs:
-    PathtoPublish: '$(build.artifactstagingdirectory)'
