@@ -6,7 +6,7 @@ trigger:
 variables:
   TargetFramework: 'net6.0'
   BuildConfiguration: 'Release'
-  DockerImageName: 'rpmapp'
+  DockerImageName: 'rpm-2023/rpmapp'
   latestTag: "latest"
   tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
 
