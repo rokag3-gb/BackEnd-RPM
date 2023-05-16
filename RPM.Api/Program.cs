@@ -1,4 +1,9 @@
+using RPM.Infra.Data;
+
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddTransient<RPMDbConnection>();
 
 // Add services to the container.
 
