@@ -2,7 +2,7 @@ resources:
 - repo: self
   fetchDepth: 1
 trigger:
-- master
+- main
 variables:
   TargetFramework: 'net6.0'
   BuildConfiguration: 'Release'
