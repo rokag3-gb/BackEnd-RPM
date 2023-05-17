@@ -22,7 +22,8 @@ RUN dotnet publish -c Release -o /app --self-contained false
 # final stage/image
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:6.0-jammy-chiseled
 EXPOSE 8080
-# ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
 # COPY --from=build /rootfs /
 WORKDIR /app
 COPY --from=build /app .
