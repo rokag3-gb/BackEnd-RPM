@@ -1,10 +1,10 @@
 using RPM.Infra.Data;
-
+using RPM.Api.App;
 var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddTransient<RPMDbConnection>();
-
+builder.Services.AddScoped<ICredentialQueries, CredentialQueries>();
 // Add services to the container.
 
 builder.Services.AddControllers();
