@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
-using RPM.Api.App;
 using RPM.Api.App.Repository;
 using RPM.Api.App.Queries;
 using RPM.Domain.Dto;
+using RPM.Domain.Commands;
 using RPM.Domain.Models;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Net.Mime;
+using System.Security.Claims;
+using AutoMapper;
 
 namespace RPM.Api.Controllers;
 
@@ -17,15 +22,18 @@ public class CredentialController : ControllerBase
     private readonly ILogger<CredentialController> _logger;
     private readonly ICredentialQueries _credentialQueries;
     private readonly ICredentialRepository _credentialRepository;
+    private readonly IMapper _mapper;
 
     public CredentialController(
         ILogger<CredentialController> logger,
         ICredentialQueries credentialQueries,
-        ICredentialRepository credentialRepository)
+        ICredentialRepository credentialRepository,
+        IMapper mapper)
     {
         _logger = logger;
         _credentialQueries = credentialQueries;
         _credentialRepository = credentialRepository;
+        _mapper = mapper;
     }
 
     // Api for querying list of Credentials
@@ -41,7 +49,7 @@ public class CredentialController : ControllerBase
         return _credentialQueries.GetCredentials(accountId, vendor, credName, isEnabled);
     }
 
-     [HttpGet]
+    [HttpGet]
     [Route("{accountId}/{credId}")]
     public Credential? GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
@@ -53,13 +61,19 @@ public class CredentialController : ControllerBase
 
     [HttpPost]
     [Route("{accountId}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Consumes(MediaTypeNames.Application.Json)]
     public ActionResult<Credential> AddCredential(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        CredentialModifyCommand credential
+        CredentialModifyDto credential
     )
     {
-        var credId = _credentialRepository.CreateSingleCredential(credential);
-        return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = credId }, credential);
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var credComand = _mapper.Map<CredentialModifyCommand>(credential);
+        credComand.SaverId = userId;
+        credComand.AccountId = accountId;
+        var result = _credentialRepository.CreateSingleCredential(credComand);
+        return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
     }
 
 }

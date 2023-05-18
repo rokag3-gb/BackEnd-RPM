@@ -1,4 +1,4 @@
-namespace RPM.Domain.Dto;
+namespace RPM.Domain.Commands;
 
     public class CredentialModifyCommand
     {
@@ -8,4 +8,5 @@ namespace RPM.Domain.Dto;
         public bool IsEnabled { get; set; }
         public string CredData { get; set; }
         public string Note { get; set; }
+        public string SaverId { get; set; }
     }
