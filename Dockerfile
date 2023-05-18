@@ -1,16 +1,16 @@
-# FROM golang:1.20 as chisel
+FROM golang:1.20 as chisel
 
-# RUN git clone --depth 1 -b main https://github.com/canonical/chisel /opt/chisel
-# WORKDIR /opt/chisel
-# RUN go build ./cmd/chisel
+RUN git clone --depth 1 -b main https://github.com/canonical/chisel /opt/chisel
+WORKDIR /opt/chisel
+RUN go build ./cmd/chisel
 
 # https://hub.docker.com/_/microsoft-dotnet
 FROM mcr.microsoft.com/dotnet/sdk:6.0-jammy AS build
 
-# COPY --from=chisel /opt/chisel/chisel /usr/bin/
-# RUN mkdir /rootfs \
-#     && chisel cut --release "ubuntu-22.04" --root /rootfs \
-#         libicu70_libs
+COPY --from=chisel /opt/chisel/chisel /usr/bin/
+RUN mkdir /rootfs \
+    && chisel cut --release "ubuntu-22.04" --root /rootfs \
+        libicu70_libs
 
 WORKDIR /source
 
@@ -22,9 +22,11 @@ RUN dotnet publish -c Release -o /app --self-contained false
 # final stage/image
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:6.0-jammy-chiseled
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-EXPOSE 8080
 
-# COPY --from=build /rootfs /
+
+COPY --from=build /rootfs /
 WORKDIR /app
 COPY --from=build /app .
+
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "RPM.Api.dll"]
