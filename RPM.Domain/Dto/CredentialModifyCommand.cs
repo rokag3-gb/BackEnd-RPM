@@ -1,6 +1,6 @@
 namespace RPM.Domain.Dto;
 
-    public class CredentialRequest
+    public class CredentialModifyCommand
     {
         public long AccountId { get; set; }
         public string Vendor { get; set; }
