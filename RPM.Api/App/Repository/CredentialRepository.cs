@@ -56,4 +56,22 @@ public class CredentialRepository : ICredentialRepository
             return result;
         }
     }
+
+    public void DeleteSingleCredential(long accountId, long credId)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = @$"delete from Credential /**where**/";
+
+            var builder = new SqlBuilder();
+            
+            builder = builder.Where("CredId = @credId", new { credId = credId });
+            builder = builder.Where("AccountId = @accId", new { accId = accountId });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            conn.Execute(template.RawSql, template.Parameters);
+        }
+    }
 }

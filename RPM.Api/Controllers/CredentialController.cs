@@ -94,4 +94,14 @@ public class CredentialController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
     }
 
+    [HttpDelete]
+    [Route("{accountId}/{credId}")]
+    public ActionResult DeleteById(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("자격증명 ID", Required = false)] long credId
+    )
+    {
+        _credentialRepository.DeleteSingleCredential(accountId, credId);
+        return Ok();
+    }
 }

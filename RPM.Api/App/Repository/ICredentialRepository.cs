@@ -6,4 +6,6 @@ public interface ICredentialRepository {
     
     Credential CreateSingleCredential(CredentialModifyCommand credential);
     Credential UpdateSingleCredential(long credId, CredentialModifyCommand credential);
+
+    void DeleteSingleCredential(long accountId, long credId);
 }
