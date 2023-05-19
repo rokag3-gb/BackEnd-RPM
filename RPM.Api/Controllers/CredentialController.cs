@@ -53,7 +53,7 @@ public class CredentialController : ControllerBase
     [Route("{accountId}/{credId}")]
     public Credential? GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        [SwaggerParameter("자격증명 사용 여부", Required = false)] long credId
+        [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
         return _credentialQueries.GetCredentialById(accountId, credId);
@@ -73,6 +73,24 @@ public class CredentialController : ControllerBase
         credComand.SaverId = userId;
         credComand.AccountId = accountId;
         var result = _credentialRepository.CreateSingleCredential(credComand);
+        return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
+    }
+
+    [HttpPut]
+    [Route("{accountId}/{credId}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public ActionResult<Credential> UpdateCredential(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("자격증명 ID", Required = false)] long credId,
+        CredentialModifyDto credential
+    )
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var credComand = _mapper.Map<CredentialModifyCommand>(credential);
+        credComand.SaverId = userId;
+        credComand.AccountId = accountId;
+        var result = _credentialRepository.UpdateSingleCredential(credId, credComand);
         return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
     }
 

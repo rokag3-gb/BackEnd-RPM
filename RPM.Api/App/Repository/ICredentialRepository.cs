@@ -5,4 +5,5 @@ namespace RPM.Api.App.Repository;
 public interface ICredentialRepository {
     
     Credential CreateSingleCredential(CredentialModifyCommand credential);
+    Credential UpdateSingleCredential(long credId, CredentialModifyCommand credential);
 }

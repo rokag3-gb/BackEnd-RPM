@@ -29,4 +29,31 @@ public class CredentialRepository : ICredentialRepository
             return result;
         }
     }
+
+    public Credential UpdateSingleCredential(long credId, CredentialModifyCommand credential)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = @$"update Credential /**set**/
+            output inserted.CredId, inserted.AccountId, inserted.Vendor, inserted.CredName,
+            inserted.IsEnabled, inserted.CredData, inserted.Note, inserted.SavedAt, inserted.SaverId
+            /**where**/";
+
+            var builder = new SqlBuilder();
+            
+            builder = builder.Set(
+                @"AccountId = @AccountId, Vendor = @Vendor, CredName = @CredName, 
+                IsEnabled = @IsEnabled, CredData = @CredData, Note = @Note,
+                SaverId = @SaverId, SavedAt = getdate()",
+                credential);
+            builder = builder.Where("AccountId = @accId", new { accId = credential.AccountId });
+            builder = builder.Where("CredId = @credId", new { credId = credId });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            var result = conn.QuerySingle<Credential>(template.RawSql, template.Parameters);
+            return result;
+        }
+    }
 }
