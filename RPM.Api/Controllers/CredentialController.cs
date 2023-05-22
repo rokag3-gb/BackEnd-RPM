@@ -14,7 +14,7 @@ using AutoMapper;
 namespace RPM.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("account")]
 public class CredentialController : ControllerBase
 {
   
@@ -38,7 +38,7 @@ public class CredentialController : ControllerBase
 
     // Api for querying list of Credentials
     [HttpGet]
-    [Route("{accountId}")]
+    [Route("{accountId}/credentials")]
     public IEnumerable<Credential> GetList(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("클라우드 벤더 코드(VEN-XXX 형식)", Required = false)] string? vendor,
@@ -50,7 +50,7 @@ public class CredentialController : ControllerBase
     }
 
     [HttpGet]
-    [Route("{accountId}/{credId}")]
+    [Route("{accountId}/credential/{credId}")]
     public Credential? GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
@@ -60,7 +60,7 @@ public class CredentialController : ControllerBase
     }
 
     [HttpPost]
-    [Route("{accountId}")]
+    [Route("{accountId}/credential")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Consumes(MediaTypeNames.Application.Json)]
     public ActionResult<Credential> AddCredential(
@@ -77,7 +77,7 @@ public class CredentialController : ControllerBase
     }
 
     [HttpPut]
-    [Route("{accountId}/{credId}")]
+    [Route("{accountId}/credential/{credId}")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Consumes(MediaTypeNames.Application.Json)]
     public ActionResult<Credential> UpdateCredential(
@@ -95,7 +95,7 @@ public class CredentialController : ControllerBase
     }
 
     [HttpDelete]
-    [Route("{accountId}/{credId}")]
+    [Route("{accountId}/credential/{credId}")]
     public ActionResult DeleteById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
