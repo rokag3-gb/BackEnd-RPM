@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPM.Domain", "RPM.Domain\RP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPM.Infra", "RPM.Infra\RPM.Infra.csproj", "{37FE87BA-102B-4982-912E-C1EB6BB5749F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPM.Api.Tests", "RPM.Api.Tests\RPM.Api.Tests.csproj", "{583C0A9E-BEDD-4A58-B243-97A8A8F9F0A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{37FE87BA-102B-4982-912E-C1EB6BB5749F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37FE87BA-102B-4982-912E-C1EB6BB5749F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37FE87BA-102B-4982-912E-C1EB6BB5749F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{583C0A9E-BEDD-4A58-B243-97A8A8F9F0A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{583C0A9E-BEDD-4A58-B243-97A8A8F9F0A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{583C0A9E-BEDD-4A58-B243-97A8A8F9F0A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{583C0A9E-BEDD-4A58-B243-97A8A8F9F0A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
