@@ -82,7 +82,7 @@ public class CredentialControlerTests
         );
 
         var result = controller.GetList(1, "", "", true);
-        Assert.IsType<List<Credential>>(result);
+        Assert.Equal(true, typeof(IEnumerable<Credential>).IsAssignableFrom(result.GetType()));
         Assert.Equal(2, result.Count());
     }
 }
