@@ -150,4 +150,54 @@ public class CredentialControlerTests
         Assert.IsType<ActionResult<Credential>>(result);
         mockRepo.Verify(r => r.CreateSingleCredential(It.IsAny<CredentialModifyCommand>()));
     }
+
+    [Fact]
+    public void UpdateCredential()
+    {
+        var mockRepo = new Mock<ICredentialRepository>();
+        var mockInput = new CredentialModifyDto();
+        var mockData = new Credential()
+        {
+            CredId = 1,
+            AccountId = 1,
+            Vendor = "VEN-XXX",
+            CredName = "test",
+            IsEnabled = true
+        };
+
+        mockRepo
+            .Setup(x => x.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyCommand>()))
+            .Returns(mockData);
+
+        var user = new ClaimsPrincipal(
+            new ClaimsIdentity(
+                new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "123"),
+                    new Claim(ClaimTypes.Name, "a@b.c")
+                    // other required and custom claims
+                },
+                "TestAuthentication"
+            )
+        );
+
+        var controller = new CredentialController(
+            null,
+            Mock.Of<ICredentialQueries>(),
+            mockRepo.Object,
+            _mapper
+        ){
+            ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+                {
+                    User = user
+                }
+            }
+        };
+
+        var result = controller.UpdateCredential(1, 1, mockInput);
+        Assert.IsType<ActionResult<Credential>>(result);
+        mockRepo.Verify(r => r.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyCommand>()));
+    }
 }
