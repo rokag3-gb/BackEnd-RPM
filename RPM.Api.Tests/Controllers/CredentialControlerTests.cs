@@ -16,6 +16,15 @@ namespace RPM.Api.Tests.Controllers;
 
 public class CredentialControlerTests
 {
+    private readonly IMapper _mapper;
+    public CredentialControlerTests()
+    {
+        _mapper = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<CredentialMapperProfile>();
+        }).CreateMapper();
+    }
+
     [Fact]
     public void GetById()
     {
@@ -97,18 +106,24 @@ public class CredentialControlerTests
     {
         var mockRepo = new Mock<ICredentialRepository>();
         var mockInput = new CredentialModifyDto();
-        var mockData = new Credential();
+        var mockData = new Credential()
+        {
+            CredId = 1,
+            AccountId = 1,
+            Vendor = "VEN-XXX",
+            CredName = "test",
+            IsEnabled = true
+        };
 
         mockRepo
             .Setup(x => x.CreateSingleCredential(It.IsAny<CredentialModifyCommand>()))
-            .Returns(mockData)
-            .Verifiable();
+            .Returns(mockData);
 
         var user = new ClaimsPrincipal(
             new ClaimsIdentity(
                 new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, "SomeValueHere"),
+                    new Claim(ClaimTypes.NameIdentifier, "123"),
                     new Claim(ClaimTypes.Name, "a@b.c")
                     // other required and custom claims
                 },
@@ -120,13 +135,19 @@ public class CredentialControlerTests
             null,
             Mock.Of<ICredentialQueries>(),
             mockRepo.Object,
-            Mock.Of<IMapper>()
-        );
-        controller.ControllerContext = new ControllerContext();
-        controller.ControllerContext.HttpContext = new DefaultHttpContext { User = user };
-        
+            _mapper
+        ){
+            ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+                {
+                    User = user
+                }
+            }
+        };
+
         var result = controller.AddCredential(1, mockInput);
-        Assert.IsType<Credential>(result);
-        mockRepo.Verify();
+        Assert.IsType<ActionResult<Credential>>(result);
+        mockRepo.Verify(r => r.CreateSingleCredential(It.IsAny<CredentialModifyCommand>()));
     }
 }
