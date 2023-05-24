@@ -52,6 +52,7 @@ public class InstanceController : ControllerBase
 
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}")]
+    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없음")]
     public ActionResult<Instance?> GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
@@ -102,6 +103,7 @@ public class InstanceController : ControllerBase
 
     [HttpDelete]
     [Route("{accountId}/instance/{instanceId}")]
+    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없어 삭제할 수 없음")]
     public ActionResult DeleteById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
