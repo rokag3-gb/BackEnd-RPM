@@ -79,7 +79,7 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
-    Instance IInstanceRepository.CreateMultipleInstance(
+    public IEnumerable<Instance> CreateMultipleInstance(
         IEnumerable<InstanceModifyCommand> instances
     )
     {
@@ -94,7 +94,8 @@ public class InstanceRepository : IInstanceRepository
             values (@AccountId, @CredId, @Vendor, @ResourceId, @Name, @Region, @Type, @Tags, @Info, @Note, @SaverId)";
 
             conn.Open();
-            var result = conn.QuerySingle<Instance>(queryTemplate, instances);
+            var result = conn.Query<Instance>(queryTemplate, instances).AsList();
+
             return result;
         }
     }
