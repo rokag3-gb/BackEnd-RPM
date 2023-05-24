@@ -200,4 +200,22 @@ public class CredentialControlerTests
         Assert.IsType<ActionResult<Credential>>(result);
         mockRepo.Verify(r => r.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyCommand>()));
     }
+
+    [Fact]
+    public void DeleteById()
+    {
+        var mockRepo = new Mock<ICredentialRepository>();
+
+        mockRepo.Setup(x => x.DeleteSingleCredential(It.IsAny<long>(), It.IsAny<long>()));
+
+        var controller = new CredentialController(
+            null,
+            Mock.Of<ICredentialQueries>(),
+            mockRepo.Object,
+            _mapper
+        );
+
+        controller.DeleteById(1, 1);
+        mockRepo.Verify(r => r.DeleteSingleCredential(It.IsAny<long>(), It.IsAny<long>()));
+    }
 }
