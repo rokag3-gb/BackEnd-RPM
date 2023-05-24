@@ -11,7 +11,8 @@ var configuration = builder.Configuration;
 builder.Services.AddTransient<RPMDbConnection>();
 builder.Services.AddScoped<ICredentialQueries, CredentialQueries>();
 builder.Services.AddScoped<ICredentialRepository, CredentialRepository>();
-
+builder.Services.AddScoped<IInstanceQueries, InstanceQueries>();
+builder.Services.AddScoped<IInstanceRepository, InstanceRepository>();
 // Add services to the container.
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
