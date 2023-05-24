@@ -4,8 +4,9 @@ namespace RPM.Api.App.Repository;
 
 public interface IInstanceRepository {
     
-    // Instance CreateSingleCredential(CredentialModifyCommand credential);
-    // Instance UpdateSingleCredential(long credId, CredentialModifyCommand credential);
+    Instance CreateSingleInstance(InstanceModifyCommand instance);
+    Instance CreateMultipleInstance(IEnumerable<InstanceModifyCommand> instance);
+    Instance UpdateSingleInstance(long instanceId, InstanceModifyCommand instance);
 
     int DeleteSingleInstance(long accountId, long instanceId);
 }
