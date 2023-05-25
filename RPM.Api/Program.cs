@@ -1,9 +1,9 @@
 using RPM.Infra.Data;
-using RPM.Api.App.Repository;
+using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using RPM.Domain.Mappers;
+using RPM.Api.App.Mappers;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;

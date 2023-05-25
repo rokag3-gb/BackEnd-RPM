@@ -1,6 +1,6 @@
-namespace RPM.Domain.Models;
+namespace RPM.Domain.Dto;
 
-public class InstanceModifyCommand
+public class InstanceModifyDto
 {
     public long AccountId { get; set; }
     public long CredId { get; set; }

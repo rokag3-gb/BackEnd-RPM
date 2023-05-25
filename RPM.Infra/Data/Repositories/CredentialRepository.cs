@@ -1,9 +1,9 @@
-using RPM.Domain.Commands;
 using RPM.Domain.Models;
+using RPM.Domain.Dto;
 using RPM.Infra.Data;
 using Dapper;
 
-namespace RPM.Api.App.Repository;
+namespace RPM.Infra.Data.Repositories;
 
 public class CredentialRepository : ICredentialRepository
 {
@@ -14,7 +14,7 @@ public class CredentialRepository : ICredentialRepository
         _rpmDbConn = salesDbConn;
     }
 
-    public Credential CreateSingleCredential(CredentialModifyCommand credential)
+    public Credential CreateSingleCredential(CredentialModifyDto credential)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
@@ -30,7 +30,7 @@ public class CredentialRepository : ICredentialRepository
         }
     }
 
-    public Credential UpdateSingleCredential(long credId, CredentialModifyCommand credential)
+    public Credential UpdateSingleCredential(long credId, CredentialModifyDto credential)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {

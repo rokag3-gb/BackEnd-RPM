@@ -1,10 +1,8 @@
-using RPM.Domain.Commands;
+using RPM.Domain.Dto;
 using RPM.Domain.Models;
-using RPM.Infra.Data;
 using Dapper;
 
-namespace RPM.Api.App.Repository;
-
+namespace RPM.Infra.Data.Repositories;
 public class InstanceRepository : IInstanceRepository
 {
     private readonly RPMDbConnection _rpmDbConn;
@@ -14,7 +12,7 @@ public class InstanceRepository : IInstanceRepository
         _rpmDbConn = salesDbConn;
     }
 
-    public Instance CreateSingleInstance(InstanceModifyCommand instance)
+    public Instance CreateSingleInstance(InstanceModifyDto instance)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
@@ -32,7 +30,7 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
-    public Instance UpdateSingleInstance(long instanceId, InstanceModifyCommand instance)
+    public Instance UpdateSingleInstance(long instanceId, InstanceModifyDto instance)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
@@ -80,7 +78,7 @@ public class InstanceRepository : IInstanceRepository
     }
 
     public IEnumerable<Instance> CreateMultipleInstance(
-        IEnumerable<InstanceModifyCommand> instances
+        IEnumerable<InstanceModifyDto> instances
     )
     {
         using (var conn = _rpmDbConn.CreateConnection())

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using RPM.Api.App.Repository;
+using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
 using RPM.Domain.Dto;
-using RPM.Domain.Commands;
+using RPM.Api.App.Commands;
 using RPM.Domain.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.AspNetCore.Authorization;
@@ -65,11 +65,11 @@ public class CredentialController : ControllerBase
     [Consumes(MediaTypeNames.Application.Json)]
     public ActionResult<Credential> AddCredential(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        CredentialModifyDto credential
+        CredentialModifyCommand credential
     )
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var credComand = _mapper.Map<CredentialModifyCommand>(credential);
+        var credComand = _mapper.Map<CredentialModifyDto>(credential);
         credComand.SaverId = userId;
         credComand.AccountId = accountId;
         var result = _credentialRepository.CreateSingleCredential(credComand);
@@ -83,11 +83,11 @@ public class CredentialController : ControllerBase
     public ActionResult<Credential> UpdateCredential(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId,
-        CredentialModifyDto credential
+        CredentialModifyCommand credential
     )
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var credComand = _mapper.Map<CredentialModifyCommand>(credential);
+        var credComand = _mapper.Map<CredentialModifyDto>(credential);
         credComand.SaverId = userId;
         credComand.AccountId = accountId;
         var result = _credentialRepository.UpdateSingleCredential(credId, credComand);

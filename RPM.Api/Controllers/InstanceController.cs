@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using RPM.Api.App.Repository;
+using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
 using RPM.Domain.Dto;
-using RPM.Domain.Commands;
+using RPM.Api.App.Commands;
 using RPM.Domain.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.AspNetCore.Authorization;

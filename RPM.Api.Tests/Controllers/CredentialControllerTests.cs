@@ -14,10 +14,10 @@ using AutoMapper;
 
 namespace RPM.Api.Tests.Controllers;
 
-public class CredentialControlerTests
+public class CredentialControllerTests
 {
     private readonly IMapper _mapper;
-    public CredentialControlerTests()
+    public CredentialControllerTests()
     {
         _mapper = new MapperConfiguration(cfg =>
         {

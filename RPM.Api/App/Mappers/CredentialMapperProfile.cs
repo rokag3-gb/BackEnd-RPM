@@ -1,7 +1,8 @@
 using AutoMapper;
 using RPM.Domain.Dto;
-using RPM.Domain.Commands;
-namespace RPM.Domain.Mappers;
+using RPM.Api.App.Commands;
+
+namespace RPM.Api.App.Mappers;
 public class CredentialMapperProfile : Profile
 {
     public CredentialMapperProfile()
