@@ -8,6 +8,10 @@ using RPM.Api.App.Mappers;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining(typeof(Program));
+});
 builder.Services.AddTransient<RPMDbConnection>();
 builder.Services.AddScoped<ICredentialQueries, CredentialQueries>();
 builder.Services.AddScoped<ICredentialRepository, CredentialRepository>();
@@ -63,7 +67,7 @@ builder.Services.AddSwaggerGen(c =>
     );
     //c.OperationFilter<AuthResponsesOperationFilter>();
 });
-builder.Services.AddAutoMapper(typeof(CredentialMapperProfile).Assembly);
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 

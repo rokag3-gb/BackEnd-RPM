@@ -1,9 +1,9 @@
 using RPM.Domain.Models;
-using RPM.Domain.Commands;
-using RPM.Domain.Mappers;
+using RPM.Api.App.Commands;
+using RPM.Api.App.Mappers;
 using RPM.Domain.Dto;
 using RPM.Api.Controllers;
-using RPM.Api.App.Repository;
+using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;

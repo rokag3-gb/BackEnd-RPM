@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Net.Mime;
 using System.Security.Claims;
 using AutoMapper;
-
+using MediatR;
 
 namespace RPM.Api.Controllers;
 
@@ -18,21 +18,24 @@ namespace RPM.Api.Controllers;
 [Route("account")]
 public class InstanceController : ControllerBase
 {
-  
     private readonly ILogger<InstanceController> _logger;
     private readonly IInstanceQueries _instanceQueries;
     private readonly IInstanceRepository _instanceRepository;
+    private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
     public InstanceController(
         ILogger<InstanceController> logger,
         IInstanceQueries instanceQueries,
         IInstanceRepository instanceRepository,
-        IMapper mapper)
+        IMediator mediator,
+        IMapper mapper
+    )
     {
         _logger = logger;
         _instanceQueries = instanceQueries;
         _instanceRepository = instanceRepository;
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
     }
 
@@ -48,7 +51,15 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("리소스 유형", Required = false)] string? type
     )
     {
-        return _instanceQueries.GetInstances(accountId, null, vendor, resourceId, name, region, type);
+        return _instanceQueries.GetInstances(
+            accountId,
+            null,
+            vendor,
+            resourceId,
+            name,
+            region,
+            type
+        );
     }
 
     [HttpGet]
@@ -59,7 +70,7 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
     )
     {
-        var result =  _instanceQueries.GetInstanceById(accountId, instanceId);
+        var result = _instanceQueries.GetInstanceById(accountId, instanceId);
         if (result == null)
         {
             return NotFound();
@@ -116,6 +127,20 @@ public class InstanceController : ControllerBase
         {
             return NotFound();
         }
+        return Ok();
+    }
+
+    [HttpPost]
+    [Route("{accountId}/instance/fetchWithCredential/{credId}")]
+    [Route("{accountId}/credential/{credId}/fetchInstances")]
+    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없어 삭제할 수 없음")]
+    public ActionResult FetchWithCredential(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("자격증명 ID", Required = false)] long credId
+    )
+    {
+        _mediator.Send(new UpdateInstancesFromCloudCommand(){CredId = credId, AccountId = accountId});
+
         return Ok();
     }
 }
