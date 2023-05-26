@@ -3,6 +3,7 @@ using RPM.Domain.Models;
 using Dapper;
 
 namespace RPM.Infra.Data.Repositories;
+
 public class InstanceRepository : IInstanceRepository
 {
     private readonly RPMDbConnection _rpmDbConn;
@@ -26,6 +27,25 @@ public class InstanceRepository : IInstanceRepository
 
             conn.Open();
             var result = conn.QuerySingle<Instance>(queryTemplate, instance);
+            return result;
+        }
+    }
+
+    public IEnumerable<Instance> CreateMultipleInstances(IEnumerable<InstanceModifyDto> instances)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var fields =
+                "AccountId, CredId, Vendor, ResourceId, Name, Region, Type, Tags, Info, Note, SaverId";
+            var queryTemplate =
+                @$"insert into Instance ({fields}) 
+            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
+            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId,
+            values (@AccountId, @CredId, @Vendor, @ResourceId, @Name, @Region, @Type, @Tags, @Info, @Note, @SaverId)";
+
+            conn.Open();
+            var result = conn.Query<Instance>(queryTemplate, instances).AsList();
+
             return result;
         }
     }
@@ -59,6 +79,24 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
+    public IEnumerable<Instance> UpdateMultipleInstances(IEnumerable<Instance> instances)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate =
+                @$"update Instance 
+            set AccountId = @AccountId, CredId = @CredId, Vendor = @Vendor, ResourceId = @ResourceId, Name = @Name,
+            Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId, SavedAt = getdate()
+            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
+            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt,
+            inserted.SaverId where InstId = @InstId";
+
+            conn.Open();
+            var result = conn.Query<Instance>(queryTemplate, instances).AsList();
+            return result;
+        }
+    }
+
     public int DeleteSingleInstance(long accountId, long instanceId)
     {
         using (var conn = _rpmDbConn.CreateConnection())
@@ -67,7 +105,7 @@ public class InstanceRepository : IInstanceRepository
 
             var builder = new SqlBuilder();
 
-            builder = builder.Where("CredId = @credId", new { credId = instanceId });
+            builder = builder.Where("InstanceId = @instanceId", new { instanceId = instanceId });
             builder = builder.Where("AccountId = @accId", new { accId = accountId });
 
             var template = builder.AddTemplate(queryTemplate);
@@ -77,24 +115,14 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
-    public IEnumerable<Instance> CreateMultipleInstance(
-        IEnumerable<InstanceModifyDto> instances
-    )
+    int IInstanceRepository.DeleteMultipleInstances(IEnumerable<long> instanceIds)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
-            var fields =
-                "AccountId, CredId, Vendor, ResourceId, Name, Region, Type, Tags, Info, Note, SaverId";
-            var queryTemplate =
-                @$"insert into Instance ({fields}) 
-            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
-            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId,
-            values (@AccountId, @CredId, @Vendor, @ResourceId, @Name, @Region, @Type, @Tags, @Info, @Note, @SaverId)";
-
+            var queryTemplate = @$"delete from Instance where InstId = @instId";
+            var queryParams = instanceIds.Select(x => new { instId = x });
             conn.Open();
-            var result = conn.Query<Instance>(queryTemplate, instances).AsList();
-
-            return result;
+            return conn.Execute(queryTemplate, queryParams);
         }
     }
 }
