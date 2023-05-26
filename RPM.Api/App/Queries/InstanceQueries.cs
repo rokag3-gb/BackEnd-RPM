@@ -15,7 +15,7 @@ public class InstanceQueries : IInstanceQueries
     }
 
     public IEnumerable<Instance> GetInstances(
-        long accountId, string? vendor = null, string? resourceId = null,
+        long accountId, long? credId, string? vendor = null, string? resourceId = null,
         string? name = null, string? region = null, string? type = null
     )
     {
@@ -27,6 +27,9 @@ public class InstanceQueries : IInstanceQueries
 
             var builder = new SqlBuilder().Select(selects);
             builder = builder.Where("AccountId = @accId", new { accId = accountId });
+            if (credId.HasValue){
+                builder = builder.Where("CredId = @credId", new { credId = credId });
+            }
             if (!string.IsNullOrEmpty(vendor)){
                 builder = builder.Where("Vendor = @vendor", new { vendor = vendor });
             }

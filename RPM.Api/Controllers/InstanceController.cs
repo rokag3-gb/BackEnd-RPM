@@ -11,6 +11,7 @@ using System.Net.Mime;
 using System.Security.Claims;
 using AutoMapper;
 
+
 namespace RPM.Api.Controllers;
 
 [ApiController]
@@ -47,7 +48,7 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("리소스 유형", Required = false)] string? type
     )
     {
-        return _instanceQueries.GetInstances(accountId, vendor, resourceId, name, region, type);
+        return _instanceQueries.GetInstances(accountId, null, vendor, resourceId, name, region, type);
     }
 
     [HttpGet]
