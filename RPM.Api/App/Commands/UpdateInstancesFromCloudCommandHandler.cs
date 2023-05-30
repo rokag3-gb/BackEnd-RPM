@@ -13,12 +13,13 @@ using AutoMapper;
 namespace RPM.Api.App.Commands;
 
 public class UpdateInstancesFromCloudCommandHandler
-        : IRequestHandler<UpdateInstancesFromCloudCommand>
+    : IRequestHandler<UpdateInstancesFromCloudCommand, int>
 {
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
     IInstanceRepository _instanceRepository;
     IMapper _mapper;
+
     public UpdateInstancesFromCloudCommandHandler(
         ICredentialQueries credentialQueries,
         IInstanceQueries instanceQueries,
@@ -31,9 +32,16 @@ public class UpdateInstancesFromCloudCommandHandler
         _instanceRepository = instanceRepository;
         _mapper = mapper;
     }
-    public async Task Handle(UpdateInstancesFromCloudCommand request, CancellationToken cancellationToken)
+
+    public async Task<int> Handle(
+        UpdateInstancesFromCloudCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var credential = _credentialQueries.GetCredentialById(request.AccountId, request.CredId);
+        if(credential == null){
+            return -1;
+        }
         IEnumerable<Instance> fetchedInstanceList = new List<Instance>();
         var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
         switch (credential.Vendor)
@@ -42,50 +50,78 @@ public class UpdateInstancesFromCloudCommandHandler
                 fetchedInstanceList = await GetVMListFromAzure(
                     request.AccountId,
                     request.CredId,
-                    credData.GetProperty("tenant_id").GetString(), 
+                    credData.GetProperty("tenant_id").GetString(),
                     credData.GetProperty("client_id").GetString(),
-                    credData.GetProperty("client_secret").GetString());
+                    credData.GetProperty("client_secret").GetString()
+                );
                 break;
-
         }
         var fetchedInstanceResourceIds = fetchedInstanceList.Select(x => x.ResourceId).ToList();
         var currentInstances = _instanceQueries.GetInstances(request.AccountId, request.CredId);
         var currentInstanceResourceIds = currentInstances.Select(x => x.ResourceId).ToList();
-        var instancesToDelete = currentInstances.Where(x => !fetchedInstanceResourceIds.Contains(x.ResourceId)).ToList();
-        var instancesToUpdate = currentInstances.Where(x => fetchedInstanceResourceIds.Contains(x.ResourceId)).ToList();
-        var instancesToInsert = fetchedInstanceList.Where(x => !currentInstanceResourceIds.Contains(x.ResourceId)).ToList();
+        var instancesToDelete = currentInstances
+            .Where(x => !fetchedInstanceResourceIds.Contains(x.ResourceId))
+            .ToList();
+        var instancesToUpdate = currentInstances
+            .Where(x => fetchedInstanceResourceIds.Contains(x.ResourceId))
+            .ToList();
+        var instancesToInsert = fetchedInstanceList
+            .Where(x => !currentInstanceResourceIds.Contains(x.ResourceId))
+            .ToList();
 
         // Insert new instances
-        var toInsertMappedList = _mapper.Map<List<Instance>, IEnumerable<InstanceModifyDto>>(instancesToInsert);
-        _instanceRepository.CreateMultipleInstances(toInsertMappedList);
+        var toInsertMappedList = _mapper.Map<List<Instance>, IEnumerable<InstanceModifyDto>>(
+            instancesToInsert
+        );
+        var conn = _instanceRepository.GetConnection();
+        using (var tx = conn.BeginTransaction())
+        {
+            var inserted = _instanceRepository.CreateMultipleInstances(toInsertMappedList);
 
-        // Update existing instances
-        _instanceRepository.UpdateMultipleInstances(instancesToUpdate);
+            // Update existing instances
+            var updated = _instanceRepository.UpdateMultipleInstances(instancesToUpdate);
 
-        // Delete instances
-        _instanceRepository.DeleteMultipleInstances(instancesToDelete.Select(x => x.InstId).ToList());
+            // Delete instances
+            var deleted = _instanceRepository.DeleteMultipleInstances(
+                instancesToDelete.Select(x => x.InstId).ToList(),
+                conn, tx
+            );
+            tx.Commit();
+            var affectedRows = inserted.Count() + updated.Count() + deleted;
+            return affectedRows;
+        }
     }
 
     private async Task<IEnumerable<Instance>> GetVMListFromAzure(
-        long accountId, long credId, string tenantId, string clientId, string clientSecret)
+        long accountId,
+        long credId,
+        string tenantId,
+        string clientId,
+        string clientSecret
+    )
     {
-        var azureClient = new AzureClient(new ClientSecretCredential(tenantId, clientId, clientSecret));
+        var azureClient = new AzureClient(
+            new ClientSecretCredential(tenantId, clientId, clientSecret)
+        );
         var vmList = await azureClient.ListAzureVMs();
         var instanceList = new List<Instance>();
         await foreach (VirtualMachineResource vm in vmList)
         {
-            instanceList.Add(new Instance(){
-                AccountId = accountId,
-                CredId = credId,
-                Vendor = "VEN-AZP",
-                ResourceId = vm.Data.Id,
-                Name = vm.Data.Name,
-                Region = vm.Data.Location,
-                Type = vm.Data.ResourceType,
-                Tags = JsonSerializer.Serialize(vm.Data.Tags),
-                Info = "",
-                Note = "",
-            });
+            instanceList.Add(
+                new Instance()
+                {
+                    AccountId = accountId,
+                    CredId = credId,
+                    Vendor = "VEN-AZP",
+                    ResourceId = vm.Data.Id,
+                    Name = vm.Data.Name,
+                    Region = vm.Data.Location,
+                    Type = vm.Data.ResourceType,
+                    Tags = JsonSerializer.Serialize(vm.Data.Tags),
+                    Info = "",
+                    Note = "",
+                }
+            );
         }
         return instanceList;
     }
