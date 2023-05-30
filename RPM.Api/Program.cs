@@ -12,14 +12,13 @@ builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining(typeof(Program));
 });
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy  =>
-                      {
-                          policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-                      });
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
 builder.Services.AddTransient<RPMDbConnection>();
@@ -27,6 +26,7 @@ builder.Services.AddScoped<ICredentialQueries, CredentialQueries>();
 builder.Services.AddScoped<ICredentialRepository, CredentialRepository>();
 builder.Services.AddScoped<IInstanceQueries, InstanceQueries>();
 builder.Services.AddScoped<IInstanceRepository, InstanceRepository>();
+
 // Add services to the container.
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -80,7 +80,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
-app.UseCors(MyAllowSpecificOrigins);
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 // if (app.Environment.IsDevelopment())
