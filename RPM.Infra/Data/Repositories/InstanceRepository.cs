@@ -124,7 +124,7 @@ public class InstanceRepository : IInstanceRepository
         var queryTemplate =
             @$"update Instance 
             set AccountId = @AccountId, CredId = @CredId, Vendor = @Vendor, ResourceId = @ResourceId, Name = @Name,
-            Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId, SavedAt = getdate()
+            Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId = @SaverId, SavedAt = getdate()
             where InstId = @InstId";
 
         var result = conn.Execute(queryTemplate, instances, tx);
