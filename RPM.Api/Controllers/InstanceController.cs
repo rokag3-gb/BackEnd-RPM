@@ -134,13 +134,13 @@ public class InstanceController : ControllerBase
     [Route("{accountId}/instance/fetchWithCredential/{credId}")]
     [Route("{accountId}/credential/{credId}/fetchInstances")]
     [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없어 삭제할 수 없음")]
-    public ActionResult FetchWithCredential(
+    public async Task<ActionResult> FetchWithCredential(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
-        _mediator.Send(new UpdateInstancesFromCloudCommand(){CredId = credId, AccountId = accountId});
+        var result = await _mediator.Send(new UpdateInstancesFromCloudCommand(){CredId = credId, AccountId = accountId});
 
-        return Ok();
+        return Ok(new AffectedRowsDto(){AffectedRows = result});
     }
 }
