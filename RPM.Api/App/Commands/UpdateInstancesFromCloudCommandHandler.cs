@@ -39,7 +39,8 @@ public class UpdateInstancesFromCloudCommandHandler
     )
     {
         var credential = _credentialQueries.GetCredentialById(request.AccountId, request.CredId);
-        if(credential == null){
+        if (credential == null)
+        {
             return -1;
         }
         IEnumerable<Instance> fetchedInstanceList = new List<Instance>();
@@ -78,22 +79,34 @@ public class UpdateInstancesFromCloudCommandHandler
         var toInsertMappedList = _mapper.Map<List<Instance>, IEnumerable<InstanceModifyDto>>(
             instancesToInsert
         );
-        var conn = _instanceRepository.GetConnection();
-        using (var tx = conn.BeginTransaction())
+        using (var conn = _instanceRepository.GetConnection())
         {
-            var inserted = _instanceRepository.CreateMultipleInstances(toInsertMappedList, conn, tx);
+            conn.Open();
+            using (var tx = conn.BeginTransaction())
+            {
+                var inserted = _instanceRepository.CreateMultipleInstances(
+                    toInsertMappedList,
+                    conn,
+                    tx
+                );
 
-            // Update existing instances
-            var updated = _instanceRepository.UpdateMultipleInstances(instancesToUpdate, conn, tx);
+                // Update existing instances
+                var updated = _instanceRepository.UpdateMultipleInstances(
+                    instancesToUpdate,
+                    conn,
+                    tx
+                );
 
-            // Delete instances
-            var deleted = _instanceRepository.DeleteMultipleInstances(
-                instancesToDelete.Select(x => x.InstId).ToList(),
-                conn, tx
-            );
-            tx.Commit();
-            var affectedRows = inserted.Count() + updated.Count() + deleted;
-            return affectedRows;
+                // Delete instances
+                var deleted = _instanceRepository.DeleteMultipleInstances(
+                    instancesToDelete.Select(x => x.InstId).ToList(),
+                    conn,
+                    tx
+                );
+                tx.Commit();
+                var affectedRows = inserted + updated + deleted;
+                return affectedRows;
+            }
         }
     }
 
@@ -110,7 +123,7 @@ public class UpdateInstancesFromCloudCommandHandler
         );
         var vmList = await azureClient.ListAzureVMs();
         var instanceList = new List<Instance>();
-        await foreach (VirtualMachineResource vm in vmList)
+        foreach (VirtualMachineResource vm in vmList)
         {
             instanceList.Add(
                 new Instance()

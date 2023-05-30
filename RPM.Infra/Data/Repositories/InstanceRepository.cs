@@ -51,7 +51,7 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
-    public IEnumerable<Instance> CreateMultipleInstances(
+    public int CreateMultipleInstances(
         IEnumerable<InstanceModifyDto> instances,
         IDbConnection conn,
         IDbTransaction tx
@@ -61,12 +61,9 @@ public class InstanceRepository : IInstanceRepository
             "AccountId, CredId, Vendor, ResourceId, Name, Region, Type, Tags, Info, Note, SaverId";
         var queryTemplate =
             @$"insert into Instance ({fields}) 
-            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
-            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId,
             values (@AccountId, @CredId, @Vendor, @ResourceId, @Name, @Region, @Type, @Tags, @Info, @Note, @SaverId)";
 
-        conn.Open();
-        var result = conn.Query<Instance>(queryTemplate, instances, tx).AsList();
+        var result = conn.Execute(queryTemplate, instances, tx);
 
         return result;
     }
@@ -118,7 +115,7 @@ public class InstanceRepository : IInstanceRepository
         }
     }
 
-    public IEnumerable<Instance> UpdateMultipleInstances(
+    public int UpdateMultipleInstances(
         IEnumerable<Instance> instances,
         IDbConnection conn,
         IDbTransaction tx
@@ -128,12 +125,9 @@ public class InstanceRepository : IInstanceRepository
             @$"update Instance 
             set AccountId = @AccountId, CredId = @CredId, Vendor = @Vendor, ResourceId = @ResourceId, Name = @Name,
             Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId, SavedAt = getdate()
-            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
-            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt,
-            inserted.SaverId where InstId = @InstId";
+            where InstId = @InstId";
 
-        conn.Open();
-        var result = conn.Query<Instance>(queryTemplate, instances, tx).AsList();
+        var result = conn.Execute(queryTemplate, instances, tx);
         return result;
     }
 
@@ -174,7 +168,6 @@ public class InstanceRepository : IInstanceRepository
     {
         var queryTemplate = @$"delete from Instance where InstId = @instId";
         var queryParams = instanceIds.Select(x => new { instId = x });
-        conn.Open();
         return conn.Execute(queryTemplate, queryParams, tx);
     }
 

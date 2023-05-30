@@ -15,11 +15,22 @@ public class AzureClient
 
     private readonly ClientSecretCredential _credential;
 
-    public async Task<AsyncPageable<VirtualMachineResource>> ListAzureVMs()
+    public async Task<List<VirtualMachineResource>> ListAzureVMs()
     {
         ArmClient armClient = new ArmClient(_credential);
         SubscriptionResource subscription = await armClient.GetDefaultSubscriptionAsync();
-        var vmCollection = subscription.GetVirtualMachinesAsync();
-        return vmCollection;
+        var rgCollection = subscription.GetResourceGroups().GetAllAsync();
+        var vmList = new List<VirtualMachineResource>();
+        await foreach (var rg in rgCollection)
+        {
+            var vmCollection = rg.GetVirtualMachines().GetAllAsync();
+            await foreach (var vm in vmCollection)
+            {
+                vmList.Add(vm);
+            }
+            
+        }
+        // var vmCollection = subscription.GetVirtualMachinesAsync();
+        return vmList;
     }
 }
