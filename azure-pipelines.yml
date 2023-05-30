@@ -3,12 +3,18 @@ resources:
   fetchDepth: 1
 trigger:
 - main
+- develop
+
 variables:
   TargetFramework: 'net6.0'
   BuildConfiguration: 'Release'
   DockerImageName: 'rpm-2023/rpmapp/rpmapi'
-  latestTag: "latest"
-  tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+    latestTag: "latest"
+    tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+    latestTag: "develop"
+    tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
 
 steps:
 - task: PublishBuildArtifacts@1
