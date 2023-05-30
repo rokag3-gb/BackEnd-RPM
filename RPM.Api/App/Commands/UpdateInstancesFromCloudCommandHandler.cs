@@ -56,6 +56,11 @@ public class UpdateInstancesFromCloudCommandHandler
                 );
                 break;
         }
+
+        if (fetchedInstanceList.Count() == 0)
+        {
+            return 0;
+        }
         var fetchedInstanceResourceIds = fetchedInstanceList.Select(x => x.ResourceId).ToList();
         var currentInstances = _instanceQueries.GetInstances(request.AccountId, request.CredId);
         var currentInstanceResourceIds = currentInstances.Select(x => x.ResourceId).ToList();
@@ -76,10 +81,10 @@ public class UpdateInstancesFromCloudCommandHandler
         var conn = _instanceRepository.GetConnection();
         using (var tx = conn.BeginTransaction())
         {
-            var inserted = _instanceRepository.CreateMultipleInstances(toInsertMappedList);
+            var inserted = _instanceRepository.CreateMultipleInstances(toInsertMappedList, conn, tx);
 
             // Update existing instances
-            var updated = _instanceRepository.UpdateMultipleInstances(instancesToUpdate);
+            var updated = _instanceRepository.UpdateMultipleInstances(instancesToUpdate, conn, tx);
 
             // Delete instances
             var deleted = _instanceRepository.DeleteMultipleInstances(
