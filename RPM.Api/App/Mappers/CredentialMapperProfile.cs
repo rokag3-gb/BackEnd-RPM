@@ -8,6 +8,6 @@ public class CredentialMapperProfile : Profile
     public CredentialMapperProfile()
     {
         CreateMap<CredentialModifyDto, CredentialModifyCommand>();
-
+        CreateMap<CredentialModifyCommand, CredentialModifyDto>();
     }
 }
