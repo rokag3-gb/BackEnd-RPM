@@ -104,4 +104,15 @@ public class CredentialController : ControllerBase
         _credentialRepository.DeleteSingleCredential(accountId, credId);
         return Ok();
     }
+
+    [HttpDelete]
+    [Route("{accountId}/credentials")]
+    public ActionResult DeleteMultipleById(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [FromQuery, SwaggerParameter("자격증명 ID", Required = false)] List<long> credId
+    )
+    {
+        var affectedRows = _credentialRepository.DeleteMultipleCredentials(accountId, credId);
+        return Ok(new AffectedRowsDto { AffectedRows = affectedRows });
+    }
 }

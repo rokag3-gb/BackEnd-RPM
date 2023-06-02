@@ -74,4 +74,24 @@ public class CredentialRepository : ICredentialRepository
             conn.Execute(template.RawSql, template.Parameters);
         }
     }
+
+    public int DeleteMultipleCredentials(long accountId, List<long> credIds)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = @$"delete from Credential /**where**/";
+
+            var builder = new SqlBuilder();
+            
+            builder = builder.Where("CredId = @credId");
+            builder = builder.Where("AccountId = @accId");
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            var paramList = credIds.Select(id => new { credId = id, accId = accountId }).ToArray();
+
+            conn.Open();
+            return conn.Execute(template.RawSql, paramList);
+        }
+    }
 }

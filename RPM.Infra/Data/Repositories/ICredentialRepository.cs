@@ -7,4 +7,5 @@ public interface ICredentialRepository {
     Credential UpdateSingleCredential(long credId, CredentialModifyDto credential);
 
     void DeleteSingleCredential(long accountId, long credId);
+    int DeleteMultipleCredentials(long accountId, List<long> credIds);
 }
