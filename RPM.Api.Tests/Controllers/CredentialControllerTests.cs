@@ -105,7 +105,7 @@ public class CredentialControllerTests
     public void AddCredential()
     {
         var mockRepo = new Mock<ICredentialRepository>();
-        var mockInput = new CredentialModifyDto();
+        var mockInput = new CredentialModifyCommand();
         var mockData = new Credential()
         {
             CredId = 1,
@@ -116,7 +116,7 @@ public class CredentialControllerTests
         };
 
         mockRepo
-            .Setup(x => x.CreateSingleCredential(It.IsAny<CredentialModifyCommand>()))
+            .Setup(x => x.CreateSingleCredential(It.IsAny<CredentialModifyDto>()))
             .Returns(mockData);
 
         var user = new ClaimsPrincipal(
@@ -148,14 +148,14 @@ public class CredentialControllerTests
 
         var result = controller.AddCredential(1, mockInput);
         Assert.IsType<ActionResult<Credential>>(result);
-        mockRepo.Verify(r => r.CreateSingleCredential(It.IsAny<CredentialModifyCommand>()));
+        mockRepo.Verify(r => r.CreateSingleCredential(It.IsAny<CredentialModifyDto>()));
     }
 
     [Fact]
     public void UpdateCredential()
     {
         var mockRepo = new Mock<ICredentialRepository>();
-        var mockInput = new CredentialModifyDto();
+        var mockInput = new CredentialModifyCommand();
         var mockData = new Credential()
         {
             CredId = 1,
@@ -166,7 +166,7 @@ public class CredentialControllerTests
         };
 
         mockRepo
-            .Setup(x => x.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyCommand>()))
+            .Setup(x => x.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyDto>()))
             .Returns(mockData);
 
         var user = new ClaimsPrincipal(
@@ -198,7 +198,7 @@ public class CredentialControllerTests
 
         var result = controller.UpdateCredential(1, 1, mockInput);
         Assert.IsType<ActionResult<Credential>>(result);
-        mockRepo.Verify(r => r.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyCommand>()));
+        mockRepo.Verify(r => r.UpdateSingleCredential(It.IsAny<long>(), It.IsAny<CredentialModifyDto>()));
     }
 
     [Fact]
