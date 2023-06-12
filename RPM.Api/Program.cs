@@ -3,7 +3,7 @@ using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using RPM.Api.App.Mappers;
+using RPM.Infra.Clients;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -76,6 +76,10 @@ builder.Services.AddSwaggerGen(c =>
         }
     );
     //c.OperationFilter<AuthResponsesOperationFilter>();
+});
+builder.Services.AddHttpClient<IAMClient>(httpClient =>
+{
+    httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
 });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

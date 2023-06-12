@@ -4,6 +4,7 @@ using RPM.Api.App.Queries;
 using RPM.Domain.Dto;
 using RPM.Api.App.Commands;
 using RPM.Domain.Models;
+using RPM.Infra.Clients;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -22,41 +23,83 @@ public class CredentialController : ControllerBase
     private readonly ILogger<CredentialController> _logger;
     private readonly ICredentialQueries _credentialQueries;
     private readonly ICredentialRepository _credentialRepository;
+    private readonly IAMClient _iamClient;
     private readonly IMapper _mapper;
 
     public CredentialController(
         ILogger<CredentialController> logger,
         ICredentialQueries credentialQueries,
         ICredentialRepository credentialRepository,
+        IAMClient iamClient,
         IMapper mapper)
     {
         _logger = logger;
         _credentialQueries = credentialQueries;
         _credentialRepository = credentialRepository;
+        _iamClient = iamClient;
         _mapper = mapper;
     }
 
     // Api for querying list of Credentials
     [HttpGet]
     [Route("{accountId}/credentials")]
-    public IEnumerable<Credential> GetList(
+    public async Task<IEnumerable<CredentialDto>> GetList(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("클라우드 벤더 코드(VEN-XXX 형식)", Required = false)] string? vendor,
         [SwaggerParameter("자격증명 이름 검색 키워드", Required = false)] string? credName,
         [SwaggerParameter("자격증명 사용 여부", Required = false)] bool? isEnabled = true
     )
     {
-        return _credentialQueries.GetCredentials(accountId, vendor, credName, isEnabled);
+        var credentials = _credentialQueries.GetCredentials(accountId, vendor, credName, isEnabled);
+        var saverIdsSet = credentials.Select(x => x.SaverId).ToHashSet();
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
+        if(userList == null)
+        {
+            userList = new List<UserListItem>();
+        }
+
+        var result = from credential in credentials
+                     join user in userList on credential.SaverId equals user.Id
+                     select new CredentialDto
+                     {
+                         CredId = credential.CredId,
+                         AccountId = credential.AccountId,
+                         Vendor = credential.Vendor,
+                         CredName = credential.CredName,
+                         IsEnabled = credential.IsEnabled,
+                         CredData = credential.CredData,
+                         Note = credential.Note,
+                         SavedAt = credential.SavedAt,
+                         SaverId = user.Id,
+                         SaverName = user.Username
+                     };
+
+        return result;
     }
 
     [HttpGet]
     [Route("{accountId}/credential/{credId}")]
-    public Credential? GetById(
+    public async Task<CredentialDto?> GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
-        return _credentialQueries.GetCredentialById(accountId, credId);
+        var credential = _credentialQueries.GetCredentialById(accountId, credId);
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var user = await _iamClient.ResolveUser(token, credential.SaverId);
+        return new CredentialDto(){
+            CredId = credential.CredId,
+            AccountId = credential.AccountId,
+            Vendor = credential.Vendor,
+            CredName = credential.CredName,
+            IsEnabled = credential.IsEnabled,
+            CredData = credential.CredData,
+            Note = credential.Note,
+            SavedAt = credential.SavedAt,
+            SaverId = user?.Id?? "",
+            SaverName = user?.Username?? ""
+        };
     }
 
     [HttpPost]
