@@ -80,12 +80,26 @@ public class CredentialController : ControllerBase
 
     [HttpGet]
     [Route("{accountId}/credential/{credId}")]
-    public Credential? GetById(
+    public async Task<CredentialDto?> GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
-        return _credentialQueries.GetCredentialById(accountId, credId);
+        var credential = _credentialQueries.GetCredentialById(accountId, credId);
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var user = await _iamClient.ResolveUser(token, credential.SaverId);
+        return new CredentialDto(){
+            CredId = credential.CredId,
+            AccountId = credential.AccountId,
+            Vendor = credential.Vendor,
+            CredName = credential.CredName,
+            IsEnabled = credential.IsEnabled,
+            CredData = credential.CredData,
+            Note = credential.Note,
+            SavedAt = credential.SavedAt,
+            SaverId = user.Id,
+            SaverName = user.Username
+        };
     }
 
     [HttpPost]
