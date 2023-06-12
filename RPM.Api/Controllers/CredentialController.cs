@@ -97,8 +97,8 @@ public class CredentialController : ControllerBase
             CredData = credential.CredData,
             Note = credential.Note,
             SavedAt = credential.SavedAt,
-            SaverId = user.Id,
-            SaverName = user.Username
+            SaverId = user?.Id?? "",
+            SaverName = user?.Username?? ""
         };
     }
 
