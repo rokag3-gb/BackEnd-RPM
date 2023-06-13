@@ -11,6 +11,7 @@ using System.Net.Mime;
 using System.Security.Claims;
 using AutoMapper;
 using MediatR;
+using RPM.Infra.Clients;
 
 namespace RPM.Api.Controllers;
 
@@ -21,6 +22,7 @@ public class InstanceController : ControllerBase
     private readonly ILogger<InstanceController> _logger;
     private readonly IInstanceQueries _instanceQueries;
     private readonly IInstanceRepository _instanceRepository;
+    private readonly IAMClient _iamClient;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
@@ -28,6 +30,7 @@ public class InstanceController : ControllerBase
         ILogger<InstanceController> logger,
         IInstanceQueries instanceQueries,
         IInstanceRepository instanceRepository,
+        IAMClient iamClient,
         IMediator mediator,
         IMapper mapper
     )
@@ -35,6 +38,7 @@ public class InstanceController : ControllerBase
         _logger = logger;
         _instanceQueries = instanceQueries;
         _instanceRepository = instanceRepository;
+        _iamClient = iamClient;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
     }
@@ -42,7 +46,7 @@ public class InstanceController : ControllerBase
     // Api for querying list of Credentials
     [HttpGet]
     [Route("{accountId}/instances")]
-    public IEnumerable<Instance> GetList(
+    public async Task<IEnumerable<InstanceDto>> GetList(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("클라우드 벤더 코드(VEN-XXX 형식)", Required = false)] string? vendor,
         [SwaggerParameter("리소스 ID", Required = false)] string? resourceId,
@@ -51,7 +55,7 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("리소스 유형", Required = false)] string? type
     )
     {
-        return _instanceQueries.GetInstances(
+        var instances = _instanceQueries.GetInstances(
             accountId,
             null,
             vendor,
@@ -60,22 +64,63 @@ public class InstanceController : ControllerBase
             region,
             type
         );
+        var saverIdsSet = instances.Select(x => x.SaverId).ToHashSet();
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
+        if(userList == null)
+        {
+            userList = new List<UserListItem>();
+        }
+
+        var result = from instance in instances
+                     join user in userList on instance.SaverId equals user.Id
+                     select new InstanceDto
+                     {
+                         AccountId = instance.AccountId,
+                         CredId = instance.CredId,
+                         Vendor = instance.Vendor,
+                         ResourceId = instance.ResourceId,
+                         Name = instance.Name,
+                         Region = instance.Region,
+                         Type = instance.Type,
+                         Tags = instance.Tags,
+                         Info = instance.Info,
+                         Note = instance.Note,
+                         SaverId = instance.SaverId,
+                         SaverName = user.Username
+                     };
+        return result;
     }
 
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}")]
     [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없음")]
-    public ActionResult<Instance?> GetById(
+    public async Task<ActionResult<InstanceDto?>> GetById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
     )
     {
-        var result = _instanceQueries.GetInstanceById(accountId, instanceId);
-        if (result == null)
+        var instance = _instanceQueries.GetInstanceById(accountId, instanceId);
+        if (instance == null)
         {
             return NotFound();
         }
-        return result;
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var user = await _iamClient.ResolveUser(token, instance.SaverId);
+        return new InstanceDto(){
+            AccountId = instance.AccountId,
+            CredId = instance.CredId,
+            Vendor = instance.Vendor,
+            ResourceId = instance.ResourceId,
+            Name = instance.Name,
+            Region = instance.Region,
+            Type = instance.Type,
+            Tags = instance.Tags,
+            Info = instance.Info,
+            Note = instance.Note,
+            SaverId = instance.SaverId,
+            SaverName = user?.Username?? ""
+        };
     }
 
     // [HttpPost]
