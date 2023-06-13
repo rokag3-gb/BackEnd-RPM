@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AWSSDK.Core" Version="3.7.107.5" />
+    <PackageReference Include="AWSSDK.EC2" Version="3.7.136.3" />
     <PackageReference Include="Azure.ResourceManager.Compute" Version="1.1.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
