@@ -9,6 +9,8 @@ using System.Text.Json;
 using Azure.ResourceManager.Compute;
 using System.Linq;
 using AutoMapper;
+using Amazon.Runtime;
+using Amazon;
 
 namespace RPM.Api.App.Commands;
 
@@ -56,6 +58,15 @@ public class UpdateInstancesFromCloudCommandHandler
                     credData.GetProperty("client_secret").GetString()
                 );
                 break;
+            case "VEN-AWS":
+                fetchedInstanceList = await GetVMListFromAwsAsync(
+                    request.AccountId,
+                    request.CredId,
+                    credData.GetProperty("access_key_id").GetString(),
+                    credData.GetProperty("access_key_secret").GetString(),
+                    credData.GetProperty("region_code").GetString()
+                );  
+                break; 
         }
 
         if (fetchedInstanceList.Count() == 0)
@@ -142,5 +153,40 @@ public class UpdateInstancesFromCloudCommandHandler
             );
         }
         return instanceList;
+    }
+
+    private async Task<IEnumerable<Instance>> GetVMListFromAwsAsync(
+        long accountId,
+        long credId,
+        string accessKeyId,
+        string accessKeySecret,
+        string regionCode
+    )
+    {
+        var awsClient = new AWSClient(new BasicAWSCredentials(accessKeyId, accessKeySecret));
+        var ec2List = await awsClient.ListAwsVMsAsync(RegionEndpoint.GetBySystemName(regionCode));
+        return ec2List
+            .Select(i =>
+            {
+                var instanceName = i.Tags
+                    .FirstOrDefault(
+                        tag => tag.Key.Equals("Name", StringComparison.OrdinalIgnoreCase)
+                    )
+                    ?.Value;
+                return new Instance()
+                {
+                    AccountId = accountId,
+                    CredId = credId,
+                    Vendor = "VEN-AWS",
+                    ResourceId = i.InstanceId,
+                    Name = instanceName?? "",
+                    Region = regionCode,
+                    Type = i.InstanceType,
+                    Tags = JsonSerializer.Serialize(i.Tags),
+                    Info = "",
+                    Note = "",
+                };
+            })
+            .ToList();
     }
 }
