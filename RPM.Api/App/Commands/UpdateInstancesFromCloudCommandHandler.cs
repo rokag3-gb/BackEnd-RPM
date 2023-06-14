@@ -9,8 +9,6 @@ using System.Text.Json;
 using Azure.ResourceManager.Compute;
 using System.Linq;
 using AutoMapper;
-using Amazon.Runtime;
-using Amazon;
 
 namespace RPM.Api.App.Commands;
 
@@ -163,8 +161,8 @@ public class UpdateInstancesFromCloudCommandHandler
         string regionCode
     )
     {
-        var awsClient = new AWSClient(new BasicAWSCredentials(accessKeyId, accessKeySecret));
-        var ec2List = await awsClient.ListAwsVMsAsync(RegionEndpoint.GetBySystemName(regionCode));
+        var awsClient = new AWSClient(accessKeyId, accessKeySecret);
+        var ec2List = await awsClient.ListAwsVMsAsync(regionCode);
         return ec2List
             .Select(i =>
             {

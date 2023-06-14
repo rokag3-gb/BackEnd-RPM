@@ -10,16 +10,16 @@ public class AWSClient
 {
     private readonly BasicAWSCredentials _credential;
 
-    public AWSClient(BasicAWSCredentials credential)
+    public AWSClient(string accessKeyId, string accessKeySecret)
     {
-        _credential = credential;
+        _credential = new BasicAWSCredentials(accessKeyId, accessKeySecret);
     }
 
-    public async Task<List<Instance>> ListAwsVMsAsync(RegionEndpoint region)
+    public async Task<List<Instance>> ListAwsVMsAsync(string regionCode)
     {
         var clientConfig = new AmazonEC2Config
         {
-            RegionEndpoint = region // Specify the region for the client
+            RegionEndpoint = RegionEndpoint.GetBySystemName(regionCode), // Specify the region for the client
         };
         var ec2Client = new AmazonEC2Client(_credential, clientConfig);
 
