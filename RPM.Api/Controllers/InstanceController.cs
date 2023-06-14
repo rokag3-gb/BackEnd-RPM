@@ -73,7 +73,8 @@ public class InstanceController : ControllerBase
         }
 
         var result = from instance in instances
-                     join user in userList on instance.SaverId equals user.Id
+                     join userRaw in userList on instance.SaverId equals userRaw.Id into joinedUsers
+                     from user in joinedUsers.DefaultIfEmpty()
                      select new InstanceDto
                      {
                          AccountId = instance.AccountId,
@@ -87,7 +88,7 @@ public class InstanceController : ControllerBase
                          Info = instance.Info,
                          Note = instance.Note,
                          SaverId = instance.SaverId,
-                         SaverName = user.Username
+                         SaverName = user?.Username?? ""
                      };
         return result;
     }

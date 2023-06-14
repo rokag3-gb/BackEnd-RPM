@@ -60,7 +60,8 @@ public class CredentialController : ControllerBase
         }
 
         var result = from credential in credentials
-                     join user in userList on credential.SaverId equals user.Id
+                     join userRaw in userList on credential.SaverId equals userRaw.Id into joinedUsers
+                     from user in joinedUsers.DefaultIfEmpty()
                      select new CredentialDto
                      {
                          CredId = credential.CredId,
@@ -71,8 +72,8 @@ public class CredentialController : ControllerBase
                          CredData = credential.CredData,
                          Note = credential.Note,
                          SavedAt = credential.SavedAt,
-                         SaverId = user.Id,
-                         SaverName = user.Username
+                         SaverId = credential.SaverId,
+                         SaverName = user?.Username?? ""
                      };
 
         return result;
