@@ -63,8 +63,8 @@ public class UpdateInstancesFromCloudCommandHandler
                     credData.GetProperty("access_key_id").GetString(),
                     credData.GetProperty("access_key_secret").GetString(),
                     credData.GetProperty("region_code").GetString()
-                );  
-                break; 
+                );
+                break;
         }
 
         if (fetchedInstanceList.Count() == 0)
@@ -177,7 +177,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     CredId = credId,
                     Vendor = "VEN-AWS",
                     ResourceId = i.InstanceId,
-                    Name = instanceName?? "",
+                    Name = instanceName ?? "",
                     Region = regionCode,
                     Type = i.InstanceType,
                     Tags = JsonSerializer.Serialize(i.Tags),
@@ -185,6 +185,30 @@ public class UpdateInstancesFromCloudCommandHandler
                     Note = "",
                 };
             })
+            .ToList();
+    }
+
+    private IEnumerable<Instance> GetVMListFromGcloud(long accountId, long credId)
+    {
+        var gcloudClient = new GoogleCloudClient();
+        var computeEngines = gcloudClient.GetGcloudComputeEngines();
+        return computeEngines
+            .Select(
+                i =>
+                    new Instance()
+                    {
+                        AccountId = accountId,
+                        CredId = credId,
+                        Vendor = "VEN-GCP",
+                        ResourceId = i.Id.ToString(),
+                        Name = i.Name,
+                        Region = i.Zone,
+                        Type = i.GetType().Name,
+                        Tags = JsonSerializer.Serialize(i.Tags),
+                        Info = "",
+                        Note = "",
+                    }
+            )
             .ToList();
     }
 }
