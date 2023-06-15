@@ -65,6 +65,13 @@ public class UpdateInstancesFromCloudCommandHandler
                     credData.GetProperty("region_code").GetString()
                 );
                 break;
+            case "VEN-GCP":
+                fetchedInstanceList =  GetVMListFromGcloud(
+                    request.AccountId,
+                    request.CredId,
+                    credential.CredData
+                );
+                break;
         }
 
         if (fetchedInstanceList.Count() == 0)
@@ -188,9 +195,9 @@ public class UpdateInstancesFromCloudCommandHandler
             .ToList();
     }
 
-    private IEnumerable<Instance> GetVMListFromGcloud(long accountId, long credId)
+    private IEnumerable<Instance> GetVMListFromGcloud(long accountId, long credId, string serviceAccountJson)
     {
-        var gcloudClient = new GoogleCloudClient();
+        var gcloudClient = new GoogleCloudClient(serviceAccountJson);
         var computeEngines = gcloudClient.GetGcloudComputeEngines();
         return computeEngines
             .Select(

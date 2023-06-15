@@ -9,18 +9,20 @@ public class GoogleCloudClient
 {
     private readonly GoogleCredential _credential;
 
-    public GoogleCloudClient()
+    public GoogleCloudClient(string serviceAccountJson)
     {
-        _credential = GoogleCredential.GetApplicationDefault();
+        _credential = GoogleCredential.FromJson(serviceAccountJson);
     }
 
     public List<Instance> GetGcloudComputeEngines()
     {
-        var builder = new InstancesClientBuilder() { Credential = _credential };
+        var builder = new InstancesClientBuilder() { GoogleCredential  = _credential };
+        var projId = ((ServiceAccountCredential)_credential.UnderlyingCredential).ProjectId;
         var client = builder.Build();
-
-        var request = new ListInstancesRequest { };
-        var response = client.List(request);
-        return response.ToList();
+        var response = client.AggregatedList(projId);
+        var instanceList = response.Select(item => item.Value).ToList()
+            .Select(i => i.Instances).ToList()
+            .SelectMany(i => i).ToList();
+        return instanceList;
     }
 }
