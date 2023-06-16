@@ -152,7 +152,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     Region = vm.Data.Location,
                     Type = vm.Data.ResourceType,
                     Tags = JsonSerializer.Serialize(vm.Data.Tags),
-                    Info = "",
+                    Info = JsonSerializer.Serialize(vm),
                     Note = "",
                 }
             );
@@ -188,7 +188,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     Region = regionCode,
                     Type = i.InstanceType,
                     Tags = JsonSerializer.Serialize(i.Tags),
-                    Info = "",
+                    Info = JsonSerializer.Serialize(i),
                     Note = "",
                 };
             })
@@ -212,7 +212,7 @@ public class UpdateInstancesFromCloudCommandHandler
                         Region = i.Zone,
                         Type = i.GetType().Name,
                         Tags = JsonSerializer.Serialize(i.Tags),
-                        Info = "",
+                        Info = JsonSerializer.Serialize(i),
                         Note = "",
                     }
             )
