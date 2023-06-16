@@ -84,9 +84,24 @@ public class UpdateInstancesFromCloudCommandHandler
         var instancesToDelete = currentInstances
             .Where(x => !fetchedInstanceResourceIds.Contains(x.ResourceId))
             .ToList();
-        var instancesToUpdate = currentInstances
-            .Where(x => fetchedInstanceResourceIds.Contains(x.ResourceId))
-            .ToList();
+        var instancesToUpdate = from currentInstance in currentInstances
+                    join fetchedInstance in fetchedInstanceList
+                    on currentInstance.ResourceId equals fetchedInstance.ResourceId
+                    select new Instance(){
+                        InstId = currentInstance.InstId,
+                        AccountId = currentInstance.AccountId,
+                        CredId = currentInstance.CredId,
+                        Vendor = currentInstance.Vendor,
+                        ResourceId = fetchedInstance.ResourceId,
+                        Name = fetchedInstance.Name,
+                        Region = fetchedInstance.Region,
+                        Type = fetchedInstance.Type,
+                        Tags = fetchedInstance.Tags,
+                        Info = fetchedInstance.Info,
+                        Note = currentInstance.Note,
+                        SavedAt = currentInstance.SavedAt,
+                        SaverId = currentInstance.SaverId
+                    };
         var instancesToInsert = fetchedInstanceList
             .Where(x => !currentInstanceResourceIds.Contains(x.ResourceId))
             .ToList();
