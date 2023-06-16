@@ -63,7 +63,7 @@ public class InstanceRepository : IInstanceRepository
             @$"insert into Instance ({fields}) 
             values (@AccountId, @CredId, @Vendor, @ResourceId, @Name, @Region, @Type, @Tags, @Info, @Note, @SaverId)";
 
-        var result = conn.Execute(queryTemplate, instances, tx);
+        var result = conn.Execute(queryTemplate, instances, transaction: tx);
 
         return result;
     }
@@ -127,7 +127,7 @@ public class InstanceRepository : IInstanceRepository
             Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId = @SaverId, SavedAt = getdate()
             where InstId = @InstId";
 
-        var result = conn.Execute(queryTemplate, instances, tx);
+        var result = conn.Execute(queryTemplate, instances, transaction: tx);
         return result;
     }
 
@@ -168,7 +168,7 @@ public class InstanceRepository : IInstanceRepository
     {
         var queryTemplate = @$"delete from Instance where InstId = @instId";
         var queryParams = instanceIds.Select(x => new { instId = x });
-        return conn.Execute(queryTemplate, queryParams, tx);
+        return conn.Execute(queryTemplate, queryParams, transaction: tx);
     }
 
     public IDbConnection GetConnection() => _rpmDbConn.CreateConnection();
