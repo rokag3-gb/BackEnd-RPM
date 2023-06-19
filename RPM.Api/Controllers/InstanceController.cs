@@ -141,23 +141,23 @@ public class InstanceController : ControllerBase
     //     return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
     // }
 
-    // [HttpPut]
-    // [Route("{accountId}/instance/{credId}")]
-    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    // [Consumes(MediaTypeNames.Application.Json)]
-    // public ActionResult<Credential> UpdateCredential(
-    //     [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-    //     [SwaggerParameter("자격증명 ID", Required = false)] long credId,
-    //     CredentialModifyDto credential
-    // )
-    // {
-    //     var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    //     var credComand = _mapper.Map<CredentialModifyCommand>(credential);
-    //     credComand.SaverId = userId;
-    //     credComand.AccountId = accountId;
-    //     var result = _instanceRepository.UpdateSingleCredential(credId, credComand);
-    //     return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
-    // }
+    [HttpPut]
+    [Route("{accountId}/instance/{instanceId}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public ActionResult<Credential> UpdateCredential(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId,
+        InstanceModifyCommand instance
+    )
+    {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var instDto = _mapper.Map<InstanceModifyDto>(instance);
+        instDto.SaverId = userId;
+        instDto.AccountId = accountId;
+        var result = _instanceRepository.UpdateSingleInstance(instanceId, instDto);
+        return CreatedAtAction(nameof(GetById), new { accountId = accountId, instanceId = result.InstId }, result);
+    }
 
     [HttpDelete]
     [Route("{accountId}/instance/{instanceId}")]
