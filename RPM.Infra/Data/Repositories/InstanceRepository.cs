@@ -75,19 +75,19 @@ public class InstanceRepository : IInstanceRepository
             var queryTemplate =
                 @$"update Instance /**set**/
             output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
-            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId,
+            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId 
             /**where**/";
 
             var builder = new SqlBuilder();
 
             builder = builder.Set(
                 @"AccountId = @AccountId, CredId = @CredId, Vendor = @Vendor, ResourceId = @ResourceId, 
-                Name = @Name, Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId,
+                Name = @Name, Region = @Region, Type = @Type, Tags = @Tags, Info = @Info, Note = @Note, SaverId = @SaverId,
                 SavedAt = getdate()",
                 instance
             );
-            builder = builder.Where("AccountId = @accId", new { accId = instance.AccountId });
-            builder = builder.Where("InstanceId = @instanceId", new { instanceId = instanceId });
+            builder = builder.Where("AccountId = @accId", new { accId = instance.AccountId })
+                            .Where("InstId = @instanceId", new { instanceId = instanceId });
 
             var template = builder.AddTemplate(queryTemplate);
 
@@ -172,4 +172,31 @@ public class InstanceRepository : IInstanceRepository
     }
 
     public IDbConnection GetConnection() => _rpmDbConn.CreateConnection();
+
+    public Instance UpdateSingleInstanceNote(long instanceId, InstanceNoteModifyDto instance)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate =
+                @$"update Instance /**set**/
+            output inserted.InstId, inserted.AccountId, inserted.CredId, inserted.Vendor, inserted.ResourceId, 
+            inserted.Name, inserted.Region, inserted.Type, inserted.Tags, inserted.Info, inserted.Note, inserted.SavedAt, inserted.SaverId 
+            /**where**/";
+
+            var builder = new SqlBuilder();
+
+            builder = builder.Set(
+                @" Note = @Note, SaverId = @SaverId, SavedAt = getdate()",
+                instance
+            );
+            builder = builder.Where("AccountId = @accId", new { accId = instance.AccountId })
+                            .Where("InstId = @instanceId", new { instanceId = instanceId });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            var result = conn.QuerySingle<Instance>(template.RawSql, template.Parameters);
+            return result;
+        }
+    }
 }

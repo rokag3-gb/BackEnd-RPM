@@ -8,6 +8,7 @@ public interface IInstanceRepository {
     IEnumerable<Instance> CreateMultipleInstances(IEnumerable<InstanceModifyDto> instance);
     int CreateMultipleInstances(IEnumerable<InstanceModifyDto> instance, IDbConnection conn, IDbTransaction tx);
     Instance UpdateSingleInstance(long instanceId, InstanceModifyDto instance);
+    Instance UpdateSingleInstanceNote(long instanceId, InstanceNoteModifyDto instance);
     IEnumerable<Instance> UpdateMultipleInstances(IEnumerable<Instance> instance);
     int UpdateMultipleInstances(IEnumerable<Instance> instance, IDbConnection conn, IDbTransaction tx);
 

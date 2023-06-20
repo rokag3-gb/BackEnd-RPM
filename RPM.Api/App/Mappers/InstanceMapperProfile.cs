@@ -9,6 +9,6 @@ public class InstanceMapperProfile : Profile
     public InstanceMapperProfile()
     {
         CreateMap<Instance, InstanceModifyDto>();
-        CreateMap<InstanceModifyCommand, InstanceModifyDto>();
+        CreateMap<InstanceNoteModifyCommand, InstanceNoteModifyDto>();
     }
 }
