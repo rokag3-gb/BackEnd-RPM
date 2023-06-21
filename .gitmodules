@@ -1,0 +1,3 @@
+[submodule "P2.Server"]
+	path = P2.Server
+	url = https://Cloudmate-Product@dev.azure.com/Cloudmate-Product/SDTeam-Project/_git/P2.Server
