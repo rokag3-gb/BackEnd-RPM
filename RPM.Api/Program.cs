@@ -4,6 +4,8 @@ using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using RPM.Infra.Clients;
+using P2.API.Services.Schedule;
+using Grpc.Net.ClientFactory;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -12,14 +14,6 @@ builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining(typeof(Program));
 });
-
-// builder.Services.AddCors(options =>
-// {
-//     options.AddDefaultPolicy(policy =>
-//     {
-//         policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-//     });
-// });
 
 builder.Services.AddTransient<RPMDbConnection>();
 builder.Services.AddScoped<ICredentialQueries, CredentialQueries>();
@@ -81,6 +75,10 @@ builder.Services.AddHttpClient<IAMClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
 });
+// builder.Services.AddGrpcClient<ScheduleCreateApiService.ScheduleCreateApiServiceClient>(o =>
+// {
+//     o.Address = new Uri("https://localhost:5001");
+// });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
