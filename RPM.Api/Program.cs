@@ -81,6 +81,10 @@ builder.Services.AddHttpClient<IAMClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
 });
+builder.Services.AddHttpClient<SalesClient>(httpClient =>
+{
+    httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
+});
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();

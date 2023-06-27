@@ -24,6 +24,7 @@ public class CredentialController : ControllerBase
     private readonly ICredentialQueries _credentialQueries;
     private readonly ICredentialRepository _credentialRepository;
     private readonly IAMClient _iamClient;
+    private readonly SalesClient _salesClient;
     private readonly IMapper _mapper;
 
     public CredentialController(
@@ -31,12 +32,14 @@ public class CredentialController : ControllerBase
         ICredentialQueries credentialQueries,
         ICredentialRepository credentialRepository,
         IAMClient iamClient,
+        SalesClient salesClient,
         IMapper mapper)
     {
         _logger = logger;
         _credentialQueries = credentialQueries;
         _credentialRepository = credentialRepository;
         _iamClient = iamClient;
+        _salesClient = salesClient;
         _mapper = mapper;
     }
 
@@ -54,19 +57,27 @@ public class CredentialController : ControllerBase
         var saverIdsSet = credentials.Select(x => x.SaverId).ToHashSet();
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
+        var codeList = await _salesClient.GetKindCodeChilds(token, "000-VEN");
         if(userList == null)
         {
             userList = new List<UserListItem>();
         }
+        if(codeList == null)
+        {
+            codeList = new List<Code>();
+        }
 
         var result = from credential in credentials
                      join userRaw in userList on credential.SaverId equals userRaw.Id into joinedUsers
+                     join codeRaw in codeList on credential.Vendor equals codeRaw.CodeKey into joinedCodes
                      from user in joinedUsers.DefaultIfEmpty()
+                     from code in joinedCodes.DefaultIfEmpty()
                      select new CredentialDto
                      {
                          CredId = credential.CredId,
                          AccountId = credential.AccountId,
                          Vendor = credential.Vendor,
+                         VendorName = code?.Name?? "",
                          CredName = credential.CredName,
                          IsEnabled = credential.IsEnabled,
                          CredData = credential.CredData,
@@ -89,10 +100,12 @@ public class CredentialController : ControllerBase
         var credential = _credentialQueries.GetCredentialById(accountId, credId);
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var user = await _iamClient.ResolveUser(token, credential.SaverId);
+        var vendor = await _salesClient.GetCodeByCodeKey(token, credential.Vendor);
         return new CredentialDto(){
             CredId = credential.CredId,
             AccountId = credential.AccountId,
             Vendor = credential.Vendor,
+            VendorName = vendor?.Name?? "",
             CredName = credential.CredName,
             IsEnabled = credential.IsEnabled,
             CredData = credential.CredData,
