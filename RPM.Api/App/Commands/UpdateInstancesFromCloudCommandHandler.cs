@@ -165,7 +165,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     ResourceId = vm.Data.Id,
                     Name = vm.Data.Name,
                     Region = vm.Data.Location,
-                    Type = vm.Data.ResourceType,
+                    Type = vm.Data.HardwareProfile.VmSize.ToString(),
                     Tags = JsonSerializer.Serialize(vm.Data.Tags),
                     Info = JsonSerializer.Serialize(vm),
                     Note = "",
