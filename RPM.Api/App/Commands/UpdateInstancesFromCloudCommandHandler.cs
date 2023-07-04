@@ -43,6 +43,10 @@ public class UpdateInstancesFromCloudCommandHandler
         {
             return -1;
         }
+        if(credential.IsEnabled == false)
+        {
+            return 0;
+        }
         IEnumerable<Instance> fetchedInstanceList = new List<Instance>();
         var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
         switch (credential.Vendor)
