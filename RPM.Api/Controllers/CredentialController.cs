@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Net.Mime;
 using System.Security.Claims;
 using AutoMapper;
+using Microsoft.Data.SqlClient;
 
 namespace RPM.Api.Controllers;
 
@@ -18,8 +19,6 @@ namespace RPM.Api.Controllers;
 [Route("account")]
 public class CredentialController : ControllerBase
 {
-  
-
     private readonly ILogger<CredentialController> _logger;
     private readonly ICredentialQueries _credentialQueries;
     private readonly ICredentialRepository _credentialRepository;
@@ -33,7 +32,8 @@ public class CredentialController : ControllerBase
         ICredentialRepository credentialRepository,
         IAMClient iamClient,
         SalesClient salesClient,
-        IMapper mapper)
+        IMapper mapper
+    )
     {
         _logger = logger;
         _credentialQueries = credentialQueries;
@@ -58,34 +58,35 @@ public class CredentialController : ControllerBase
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
         var codeList = await _salesClient.GetKindCodeChilds(token, "000-VEN");
-        if(userList == null)
+        if (userList == null)
         {
             userList = new List<UserListItem>();
         }
-        if(codeList == null)
+        if (codeList == null)
         {
             codeList = new List<Code>();
         }
 
-        var result = from credential in credentials
-                     join userRaw in userList on credential.SaverId equals userRaw.Id into joinedUsers
-                     join codeRaw in codeList on credential.Vendor equals codeRaw.CodeKey into joinedCodes
-                     from user in joinedUsers.DefaultIfEmpty()
-                     from code in joinedCodes.DefaultIfEmpty()
-                     select new CredentialDto
-                     {
-                         CredId = credential.CredId,
-                         AccountId = credential.AccountId,
-                         Vendor = credential.Vendor,
-                         VendorName = code?.Name?? "",
-                         CredName = credential.CredName,
-                         IsEnabled = credential.IsEnabled,
-                         CredData = credential.CredData,
-                         Note = credential.Note,
-                         SavedAt = credential.SavedAt,
-                         SaverId = credential.SaverId,
-                         SaverName = user?.Username?? ""
-                     };
+        var result =
+            from credential in credentials
+            join userRaw in userList on credential.SaverId equals userRaw.Id into joinedUsers
+            join codeRaw in codeList on credential.Vendor equals codeRaw.CodeKey into joinedCodes
+            from user in joinedUsers.DefaultIfEmpty()
+            from code in joinedCodes.DefaultIfEmpty()
+            select new CredentialDto
+            {
+                CredId = credential.CredId,
+                AccountId = credential.AccountId,
+                Vendor = credential.Vendor,
+                VendorName = code?.Name ?? "",
+                CredName = credential.CredName,
+                IsEnabled = credential.IsEnabled,
+                CredData = credential.CredData,
+                Note = credential.Note,
+                SavedAt = credential.SavedAt,
+                SaverId = credential.SaverId,
+                SaverName = user?.Username ?? ""
+            };
 
         return result;
     }
@@ -101,18 +102,19 @@ public class CredentialController : ControllerBase
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var user = await _iamClient.ResolveUser(token, credential.SaverId);
         var vendor = await _salesClient.GetCodeByCodeKey(token, credential.Vendor);
-        return new CredentialDto(){
+        return new CredentialDto()
+        {
             CredId = credential.CredId,
             AccountId = credential.AccountId,
             Vendor = credential.Vendor,
-            VendorName = vendor?.Name?? "",
+            VendorName = vendor?.Name ?? "",
             CredName = credential.CredName,
             IsEnabled = credential.IsEnabled,
             CredData = credential.CredData,
             Note = credential.Note,
             SavedAt = credential.SavedAt,
-            SaverId = user?.Id?? "",
-            SaverName = user?.Username?? ""
+            SaverId = user?.Id ?? "",
+            SaverName = user?.Username ?? ""
         };
     }
 
@@ -130,7 +132,11 @@ public class CredentialController : ControllerBase
         credComand.SaverId = userId;
         credComand.AccountId = accountId;
         var result = _credentialRepository.CreateSingleCredential(credComand);
-        return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { accountId = accountId, credId = result.CredId },
+            result
+        );
     }
 
     [HttpPut]
@@ -148,7 +154,11 @@ public class CredentialController : ControllerBase
         credComand.SaverId = userId;
         credComand.AccountId = accountId;
         var result = _credentialRepository.UpdateSingleCredential(credId, credComand);
-        return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { accountId = accountId, credId = result.CredId },
+            result
+        );
     }
 
     [HttpDelete]
@@ -158,7 +168,17 @@ public class CredentialController : ControllerBase
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
-        _credentialRepository.DeleteSingleCredential(accountId, credId);
+        try
+        {
+            _credentialRepository.DeleteSingleCredential(accountId, credId);
+        }
+        catch (SqlException ex)
+        {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new DbErrorDto() { Message = ex.Message, ErrorCode = ex.ErrorCode }
+            );
+        }
         return Ok();
     }
 
@@ -169,7 +189,17 @@ public class CredentialController : ControllerBase
         [FromQuery, SwaggerParameter("자격증명 ID", Required = false)] List<long> credId
     )
     {
-        var affectedRows = _credentialRepository.DeleteMultipleCredentials(accountId, credId);
-        return Ok(new AffectedRowsDto { AffectedRows = affectedRows });
+        try
+        {
+            var affectedRows = _credentialRepository.DeleteMultipleCredentials(accountId, credId);
+            return Ok(new AffectedRowsDto { AffectedRows = affectedRows });
+        }
+        catch (SqlException ex)
+        {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new DbErrorDto() { Message = ex.Message, ErrorCode = ex.ErrorCode }
+            );
+        }
     }
 }
