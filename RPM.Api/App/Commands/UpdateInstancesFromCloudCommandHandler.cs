@@ -51,7 +51,7 @@ public class UpdateInstancesFromCloudCommandHandler
         var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
         switch (credential.Vendor)
         {
-            case "VEN-AZP":
+            case "VEN-AZT":
                 fetchedInstanceList = await GetVMListFromAzure(
                     request.AccountId,
                     request.CredId,
