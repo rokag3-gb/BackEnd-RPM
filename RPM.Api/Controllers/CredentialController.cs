@@ -174,9 +174,10 @@ public class CredentialController : ControllerBase
         }
         catch (SqlException ex)
         {
+            _logger.LogError(ex, ex.Message);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new DbErrorDto() { Message = ex.Message, ErrorCode = ex.ErrorCode }
+                new DbErrorDto() { Message = "DB에서 처리중 오류가 발생하여 처리하지 못했습니다.", ErrorCode = 0 }
             );
         }
         return Ok();
@@ -196,9 +197,10 @@ public class CredentialController : ControllerBase
         }
         catch (SqlException ex)
         {
+            _logger.LogError(ex, ex.Message);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new DbErrorDto() { Message = ex.Message, ErrorCode = ex.ErrorCode }
+                new DbErrorDto() { Message = "DB에서 처리중 오류가 발생하여 처리하지 못했습니다.", ErrorCode = 0 }
             );
         }
     }
