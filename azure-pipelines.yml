@@ -1,7 +1,7 @@
 resources:
 - repo: self
   fetchDepth: 1
-  
+
 trigger:
 - main
 - develop
@@ -12,6 +12,7 @@ variables:
   DockerImageName: 'rpm-2023/rpmapp/rpmapi'
   projPath: '$(Build.SourcesDirectory)/BackEnd-RPM/RPM.Api'
   docsSrcPath: '$(Build.SourcesDirectory)/SDTeam-Docs'
+  vmImageName: 'ubuntu-latest'
   ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
     latestTag: "latest"
     tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
