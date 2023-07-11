@@ -18,7 +18,7 @@ public class CredentialQueries : ICredentialQueries
         long accountId,
         string? vendor = null,
         string? credName = null,
-        bool? isEnabled = true
+        bool? isEnabled = null
     )
     {
         using (var conn = _rpmDbConn.CreateConnection())
@@ -29,11 +29,16 @@ public class CredentialQueries : ICredentialQueries
 
             var builder = new SqlBuilder().Select(selects);
             builder = builder.Where("AccountId = @accId", new { accId = accountId });
-            builder = builder.Where("IsEnabled = @isEnabled", new { isEnabled = isEnabled });
-            if (!string.IsNullOrEmpty(vendor)){
+            if (isEnabled.HasValue)
+            {
+                builder = builder.Where("IsEnabled = @isEnabled", new { isEnabled = isEnabled });
+            }
+            if (!string.IsNullOrEmpty(vendor))
+            {
                 builder = builder.Where("Vendor = @vendor", new { vendor = vendor });
             }
-            if (!string.IsNullOrEmpty(credName)){
+            if (!string.IsNullOrEmpty(credName))
+            {
                 builder = builder.Where("CredName = @credName", new { credName = credName });
             }
 

@@ -43,11 +43,15 @@ public class UpdateInstancesFromCloudCommandHandler
         {
             return -1;
         }
+        if(credential.IsEnabled == false)
+        {
+            return 0;
+        }
         IEnumerable<Instance> fetchedInstanceList = new List<Instance>();
         var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
         switch (credential.Vendor)
         {
-            case "VEN-AZP":
+            case "VEN-AZT":
                 fetchedInstanceList = await GetVMListFromAzure(
                     request.AccountId,
                     request.CredId,
@@ -165,7 +169,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     ResourceId = vm.Data.Id,
                     Name = vm.Data.Name,
                     Region = vm.Data.Location,
-                    Type = vm.Data.ResourceType,
+                    Type = vm.Data.HardwareProfile.VmSize.ToString(),
                     Tags = JsonSerializer.Serialize(vm.Data.Tags),
                     Info = JsonSerializer.Serialize(vm),
                     Note = "",
@@ -224,8 +228,8 @@ public class UpdateInstancesFromCloudCommandHandler
                         Vendor = "VEN-GCP",
                         ResourceId = i.Id.ToString(),
                         Name = i.Name,
-                        Region = i.Zone,
-                        Type = i.GetType().Name,
+                        Region = i.Zone.Split("/").Last(),
+                        Type = i.MachineType.Split("/").Last(),
                         Tags = JsonSerializer.Serialize(i.Tags),
                         Info = JsonSerializer.Serialize(i),
                         Note = "",
