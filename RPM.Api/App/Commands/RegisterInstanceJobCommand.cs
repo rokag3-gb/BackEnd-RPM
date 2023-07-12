@@ -9,5 +9,7 @@ public class RegisterInstanceJobCommand : IRequest<int>
     public IEnumerable<long> InstanceIds { get; set; }
     public string CronExpressioon { get; set; }
     public string ActionCode { get; set; }
+    public string Note { get; set; }
+    public string SavedByUserId { get; set; }
 
 }

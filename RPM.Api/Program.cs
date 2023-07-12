@@ -4,8 +4,6 @@ using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using RPM.Infra.Clients;
-using P2.API.Services.Schedule;
-using Grpc.Net.ClientFactory;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -75,10 +73,7 @@ builder.Services.AddHttpClient<IAMClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
 });
-// builder.Services.AddGrpcClient<ScheduleCreateApiService.ScheduleCreateApiServiceClient>(o =>
-// {
-//     o.Address = new Uri("https://localhost:5001");
-// });
+builder.Services.AddScoped<IP2Client>(sp => new P2Client(configuration.GetConnectionString("P2PClientBaseUrl")));
 builder.Services.AddHttpClient<SalesClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
