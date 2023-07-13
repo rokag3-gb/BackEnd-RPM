@@ -1,6 +1,8 @@
 using MediatR;
 using RPM.Api.App.Queries;
 using RPM.Infra.Clients;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace RPM.Api.App.Commands;
 
@@ -30,17 +32,35 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
     )
     {
         // VM, Credential 목록 쿼리
-        var instanceaList = _instanceQueries.GetInstancesByIds(
+        var instanceList = _instanceQueries.GetInstancesByIds(
             request.AccountId,
             request.InstanceIds
         );
-        var credentialIds = instanceaList.GroupBy(x => x.CredId).Select(x => x.First().CredId);
+        var credentialIds = instanceList.GroupBy(x => x.CredId).Select(x => x.First().CredId);
         var credentialList = _credentialQueries.GetCredentialsByIds(
             request.AccountId,
             credentialIds
         );
         // VM 목록, Credential Dict 만들기
-        // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
+        var instanceListStripped = instanceList
+            .Select(
+                x =>
+                    new
+                    {
+                        ResourceId = x.ResourceId,
+                        Name = x.Name,
+                        Region = x.Region,
+                        Vendor = x.Vendor,
+                        CredId = x.CredId,
+                        Info = x.Info
+                    }
+            )
+            .ToList();
+        var credentialDict = credentialList.ToDictionary(
+            x => x.CredId,
+            x => new { CredData = x.CredData }
+        );
+
         var yamlWorkflowFilePath = _config.GetConnectionString("YamlWorkflowFilePath");
         if (string.IsNullOrEmpty(yamlWorkflowFilePath))
         {
@@ -56,6 +76,14 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                 using (StreamReader streamReader = new StreamReader(fileStream))
                 {
                     string fileContent = streamReader.ReadToEnd();
+
+                    //YAML 파싱
+                    var deserializer = new DeserializerBuilder()
+                        .WithNamingConvention(UnderscoredNamingConvention.Instance)  // see height_in_inches in sample yml 
+                        .Build();
+                        // var p = deserializer.Deserialize(fileContent);
+
+                    // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
                     var newJobId = await _p2Client.RegisterJobYaml(
                         request.AccountId,
                         fileContent,
