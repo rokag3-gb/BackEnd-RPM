@@ -30,10 +30,20 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
     )
     {
         // VM, Credential 목록 쿼리
+        var instanceaList = _instanceQueries.GetInstancesByIds(
+            request.AccountId,
+            request.InstanceIds
+        );
+        var credentialIds = instanceaList.GroupBy(x => x.CredId).Select(x => x.First().CredId);
+        var credentialList = _credentialQueries.GetCredentialsByIds(
+            request.AccountId,
+            credentialIds
+        );
         // VM 목록, Credential Dict 만들기
         // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
         var yamlWorkflowFilePath = _config.GetConnectionString("YamlWorkflowFilePath");
-        if (string.IsNullOrEmpty(yamlWorkflowFilePath)){
+        if (string.IsNullOrEmpty(yamlWorkflowFilePath))
+        {
             return -1;
         }
         try

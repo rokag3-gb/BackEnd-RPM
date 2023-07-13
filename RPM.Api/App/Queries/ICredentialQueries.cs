@@ -7,4 +7,5 @@ public interface ICredentialQueries {
         long accountId, string? vendor = null,
         string? credName = null, bool? isEnabled = null);
     Credential? GetCredentialById(long accountId, long credId);
+    IEnumerable<Credential> GetCredentialsByIds(long accountId, IEnumerable<long> credentialIds);
 }

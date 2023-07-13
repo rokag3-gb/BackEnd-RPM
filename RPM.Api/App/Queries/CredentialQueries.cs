@@ -69,4 +69,22 @@ public class CredentialQueries : ICredentialQueries
             return conn.Query<Credential>(template.RawSql, template.Parameters).FirstOrDefault();
         }
     }
+
+    public IEnumerable<Credential> GetCredentialsByIds(long accountId, IEnumerable<long> credentialIds)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = "select /**select**/ from Credential  /**where**/";
+            var selects = @"CredId, AccountId, Vendor, CredName, IsEnabled, CredData, Note, SavedAt, SaverId";
+
+            var builder = new SqlBuilder().Select(selects);
+            builder = builder.Where("AccountId = @accId", new { accId = accountId });
+            builder = builder.Where("CredId IN @credIds", new { credIds = credentialIds });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            return conn.Query<Credential>(template.RawSql, template.Parameters).AsList();
+        }
+    }
 }
