@@ -3,6 +3,8 @@ using RPM.Api.App.Queries;
 using RPM.Infra.Clients;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using RPM.Domain.P2Models;
+
 
 namespace RPM.Api.App.Commands;
 
@@ -81,7 +83,8 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                     var deserializer = new DeserializerBuilder()
                         .WithNamingConvention(UnderscoredNamingConvention.Instance)  // see height_in_inches in sample yml 
                         .Build();
-                        // var p = deserializer.Deserialize(fileContent);
+                        var dag = deserializer.Deserialize<Job>(fileContent);
+                        dag.InputValues["actionCode"] = $"--action-code {request.ActionCode}";
 
                     // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
                     var newJobId = await _p2Client.RegisterJobYaml(
