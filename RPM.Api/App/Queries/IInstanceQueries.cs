@@ -7,4 +7,5 @@ public interface IInstanceQueries {
         long accountId, long? credId, string? vendor = null, string? resourceId = null,
         string? name = null, string? region = null, string? type = null);
     Instance? GetInstanceById(long accountId, long instanceId);
+    IEnumerable<Instance> GetInstancesByIds(long accountId, IEnumerable<long> instanceIds);
 }
