@@ -4,7 +4,7 @@ using RPM.Infra.Clients;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using RPM.Domain.P2Models;
-
+using System.Text.Json;
 
 namespace RPM.Api.App.Commands;
 
@@ -81,15 +81,23 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
 
                     //YAML 파싱
                     var deserializer = new DeserializerBuilder()
-                        .WithNamingConvention(UnderscoredNamingConvention.Instance)  // see height_in_inches in sample yml 
+                        .WithNamingConvention(UnderscoredNamingConvention.Instance) // see height_in_inches in sample yml
                         .Build();
-                        var dag = deserializer.Deserialize<Job>(fileContent);
-                        dag.InputValues["actionCode"] = $"--action-code {request.ActionCode}";
+                    var dag = deserializer.Deserialize<Job>(fileContent);
+                    dag.InputValues["actionCode"] = $"--action-code {request.ActionCode}";
+                    dag.InputValues["instJson"] =
+                        $"--vm-list-json-data {JsonSerializer.Serialize(instanceListStripped)}";
+                    dag.InputValues["credJson"] =
+                        $"--cred-dict-json-data {JsonSerializer.Serialize(credentialDict)}";
+                    var serializer = new SerializerBuilder()
+                        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                        .Build();
+                    var finalYaml = serializer.Serialize(dag);
 
                     // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
                     var newJobId = await _p2Client.RegisterJobYaml(
                         request.AccountId,
-                        fileContent,
+                        finalYaml,
                         request.Note,
                         request.SavedByUserId
                     );
