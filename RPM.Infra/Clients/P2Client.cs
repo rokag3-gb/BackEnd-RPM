@@ -6,6 +6,7 @@ namespace RPM.Infra.Clients;
 
 public interface IP2Client {
     Task<long> RegisterJobYaml(long accountId, string workflowYaml, string note, string savedByUserId);
+    void CreateScheduleForJob(long accountId, long jobId, string scheduleName, string cronExpression, string note, string savedByUserId);
 }
 
 public class P2Client : IP2Client
@@ -34,23 +35,23 @@ public class P2Client : IP2Client
         return res.JobId;
     }
 
-    public void HelloWorld()
+    public void CreateScheduleForJob(long accountId, long jobId, string scheduleName, string cronExpression, string note, string savedByUserId)
     {
         var client = new ScheduleCreateApiService.ScheduleCreateApiServiceClient(_grpcChannel);
-        var request = new CreateSchedulesRequest() { JobId = 1 };
+        var request = new CreateSchedulesRequest() { JobId = jobId };
         request.CreateSchedules.Add(
             new CreateScheduleData()
             {
-                AccountId = 1,
-                ScheduleName = "test",
-                Cron = "*/5 * * * * *",
+                AccountId = accountId,
+                ScheduleName = scheduleName,
+                Cron = cronExpression,
                 IsEnable = true,
                 ActivateDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 ExpireDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss"),
-                Note = "test",
-                SaveUserId = "sss",
+                Note = note,
+                SaveUserId = savedByUserId,
             }
         );
-        client.CreateSchedules(request);
+        var response = client.CreateSchedules(request);
     }
 }
