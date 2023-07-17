@@ -67,30 +67,56 @@ public class InstanceController : ControllerBase
         var saverIdsSet = instances.Select(x => x.SaverId).ToHashSet();
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
-        if(userList == null)
+        if (userList == null)
         {
             userList = new List<UserListItem>();
         }
 
-        var result = from instance in instances
-                     join userRaw in userList on instance.SaverId equals userRaw.Id into joinedUsers
-                     from user in joinedUsers.DefaultIfEmpty()
-                     select new InstanceDto
-                     {
-                         AccountId = instance.AccountId,
-                         CredId = instance.CredId,
-                         Vendor = instance.Vendor,
-                         ResourceId = instance.ResourceId,
-                         Name = instance.Name,
-                         Region = instance.Region,
-                         Type = instance.Type,
-                         Tags = instance.Tags,
-                         Info = instance.Info,
-                         Note = instance.Note,
-                         SaverId = instance.SaverId,
-                         SaverName = user?.Username?? ""
-                     };
+        var result =
+            from instance in instances
+            join userRaw in userList on instance.SaverId equals userRaw.Id into joinedUsers
+            from user in joinedUsers.DefaultIfEmpty()
+            select new InstanceDto
+            {
+                AccountId = instance.AccountId,
+                CredId = instance.CredId,
+                Vendor = instance.Vendor,
+                ResourceId = instance.ResourceId,
+                Name = instance.Name,
+                Region = instance.Region,
+                Type = instance.Type,
+                Tags = instance.Tags,
+                Info = instance.Info,
+                Note = instance.Note,
+                SaverId = instance.SaverId,
+                SaverName = user?.Username ?? ""
+            };
         return result;
+    }
+
+    [HttpPost]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Route("{accountId}/instances/registerWithJob")]
+    public async Task<ActionResult> RegisterInstancesWithJob(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [FromBody] InstancesJobRegisterDto registerParams
+    )
+    {
+        var result = await _mediator.Send(
+            new RegisterInstanceJobCommand()
+            {
+                AccountId = accountId,
+                InstanceIds = registerParams.InstIds,
+                ActionCode = registerParams.ActionCode,
+                Note = "",
+                SavedByUserId = ""
+            }
+        );
+        if (result != 0)
+        {
+            return StatusCode(500);
+        }
+        return Ok();
     }
 
     [HttpGet]
@@ -108,7 +134,8 @@ public class InstanceController : ControllerBase
         }
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var user = await _iamClient.ResolveUser(token, instance.SaverId);
-        return new InstanceDto(){
+        return new InstanceDto()
+        {
             AccountId = instance.AccountId,
             CredId = instance.CredId,
             Vendor = instance.Vendor,
@@ -120,26 +147,9 @@ public class InstanceController : ControllerBase
             Info = instance.Info,
             Note = instance.Note,
             SaverId = instance.SaverId,
-            SaverName = user?.Username?? ""
+            SaverName = user?.Username ?? ""
         };
     }
-
-    // [HttpPost]
-    // [Route("{accountId}/instance")]
-    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    // [Consumes(MediaTypeNames.Application.Json)]
-    // public ActionResult<Credential> AddCredential(
-    //     [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-    //     CredentialModifyDto credential
-    // )
-    // {
-    //     var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    //     var credComand = _mapper.Map<CredentialModifyCommand>(credential);
-    //     credComand.SaverId = userId;
-    //     credComand.AccountId = accountId;
-    //     var result = _instanceRepository.CreateSingleCredential(credComand);
-    //     return CreatedAtAction(nameof(GetById), new { accountId = accountId, credId = result.CredId }, result);
-    // }
 
     [HttpPut]
     [Route("{accountId}/instance/{instanceId}")]
@@ -153,10 +163,14 @@ public class InstanceController : ControllerBase
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var instDto = _mapper.Map<InstanceNoteModifyDto>(instance);
-        instDto.SaverId = userId?? "";
+        instDto.SaverId = userId ?? "";
         instDto.AccountId = accountId;
         var result = _instanceRepository.UpdateSingleInstanceNote(instanceId, instDto);
-        return CreatedAtAction(nameof(GetById), new { accountId = accountId, instanceId = result.InstId }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { accountId = accountId, instanceId = result.InstId },
+            result
+        );
     }
 
     [HttpDelete]
@@ -176,6 +190,8 @@ public class InstanceController : ControllerBase
         return Ok();
     }
 
+    
+
     [HttpPost]
     [Route("{accountId}/instance/fetchWithCredential/{credId}")]
     [Route("{accountId}/credential/{credId}/fetchInstances")]
@@ -185,8 +201,10 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("자격증명 ID", Required = false)] long credId
     )
     {
-        var result = await _mediator.Send(new UpdateInstancesFromCloudCommand(){CredId = credId, AccountId = accountId});
+        var result = await _mediator.Send(
+            new UpdateInstancesFromCloudCommand() { CredId = credId, AccountId = accountId }
+        );
 
-        return Ok(new AffectedRowsDto(){AffectedRows = result});
+        return Ok(new AffectedRowsDto() { AffectedRows = result });
     }
 }
