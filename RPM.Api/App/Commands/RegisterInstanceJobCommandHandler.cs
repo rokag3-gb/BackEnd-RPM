@@ -4,7 +4,9 @@ using RPM.Infra.Clients;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using RPM.Domain.P2Models;
+using RPM.Domain.Dto;
 using System.Text.Json;
+using RPM.Infra.Data.Repositories;
 
 namespace RPM.Api.App.Commands;
 
@@ -12,18 +14,21 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
 {
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
+    IInstanceJobRepository _instanceJobRepository;
     IP2Client _p2Client;
     private readonly IConfiguration _config;
 
     public RegisterInstanceJobCommandHandler(
         ICredentialQueries credentialQueries,
         IInstanceQueries instanceQueries,
+        IInstanceJobRepository instanceJobRepository,
         IP2Client p2Client,
         IConfiguration config
     )
     {
         _credentialQueries = credentialQueries;
         _instanceQueries = instanceQueries;
+        _instanceJobRepository = instanceJobRepository;
         _p2Client = p2Client;
         _config = config;
     }
@@ -101,6 +106,17 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                         request.Note,
                         request.SavedByUserId
                     );
+                    foreach (var instance in instanceList)
+                    {
+                        _instanceJobRepository.CreateSingleInstanceJob(
+                            new InstanceJobModifyDto() {
+                                InstId = instance.InstId,
+                                JobId = newJobId,
+                                ActionCode = request.ActionCode,
+                                SavedAt = DateTime.Now
+                             }
+                        );
+                    }
                     return 0;
                 }
             }
