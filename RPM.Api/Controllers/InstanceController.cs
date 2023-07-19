@@ -110,7 +110,8 @@ public class InstanceController : ControllerBase
                 InstanceIds = registerParams.InstIds,
                 ActionCode = registerParams.ActionCode,
                 Note = "",
-                SavedByUserId = userId?? ""
+                SavedByUserId = userId?? "",
+                CronExpressioon = registerParams.CronExpression
             }
         );
         if (result != null)
