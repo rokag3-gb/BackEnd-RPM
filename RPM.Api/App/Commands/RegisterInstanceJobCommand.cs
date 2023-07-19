@@ -2,7 +2,7 @@ using MediatR;
 
 namespace RPM.Api.App.Commands;
 
-public class RegisterInstanceJobCommand : IRequest<int>
+public class RegisterInstanceJobCommand : IRequest<IEnumerable<long>>
 {
     
     public long AccountId { get; set; }

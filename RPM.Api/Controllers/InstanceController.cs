@@ -97,7 +97,7 @@ public class InstanceController : ControllerBase
     [HttpPost]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("{accountId}/instances/registerWithJob")]
-    public async Task<ActionResult> RegisterInstancesWithJob(
+    public async Task<ActionResult<IEnumerable<long>>> RegisterInstancesWithJob(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [FromBody] InstancesJobRegisterDto registerParams
     )
@@ -113,11 +113,11 @@ public class InstanceController : ControllerBase
                 SavedByUserId = userId?? ""
             }
         );
-        if (result != 0)
+        if (result != null)
         {
-            return StatusCode(500);
+            return Ok(result);
         }
-        return Ok();
+        return StatusCode(500);
     }
 
     [HttpGet]

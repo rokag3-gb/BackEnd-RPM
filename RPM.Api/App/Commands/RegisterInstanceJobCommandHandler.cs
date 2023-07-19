@@ -10,7 +10,7 @@ using RPM.Infra.Data.Repositories;
 
 namespace RPM.Api.App.Commands;
 
-public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanceJobCommand, int>
+public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanceJobCommand, IEnumerable<long>>
 {
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
@@ -33,7 +33,7 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
         _config = config;
     }
 
-    public async Task<int> Handle(
+    public async Task<IEnumerable<long>> Handle(
         RegisterInstanceJobCommand request,
         CancellationToken cancellationToken
     )
@@ -71,7 +71,7 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
         var yamlWorkflowFilePath = _config.GetConnectionString("YamlWorkflowFilePath");
         if (string.IsNullOrEmpty(yamlWorkflowFilePath))
         {
-            return -1;
+            return null;
         }
         try
         {
@@ -106,9 +106,10 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                         request.Note,
                         request.SavedByUserId
                     );
+                    var instJobIds = new List<long>();
                     foreach (var instance in instanceList)
                     {
-                        _instanceJobRepository.CreateSingleInstanceJob(
+                        var instJob = _instanceJobRepository.CreateSingleInstanceJob(
                             new InstanceJobModifyDto() {
                                 InstId = instance.InstId,
                                 JobId = newJobId,
@@ -116,8 +117,9 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                                 SavedAt = DateTime.Now
                              }
                         );
+                        instJobIds.Add(instJob.SNo);
                     }
-                    return 0;
+                    return instJobIds;
                 }
             }
         }
@@ -129,6 +131,6 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
         {
             Console.WriteLine("An error occurred while opening the file.");
         }
-        return 0;
+        return null;
     }
 }
