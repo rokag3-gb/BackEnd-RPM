@@ -10,7 +10,8 @@ using RPM.Infra.Data.Repositories;
 
 namespace RPM.Api.App.Commands;
 
-public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanceJobCommand, IEnumerable<long>>
+public class RegisterInstanceJobCommandHandler
+    : IRequestHandler<RegisterInstanceJobCommand, IEnumerable<long>>
 {
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
@@ -107,15 +108,24 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
                         request.SavedByUserId
                     );
                     var instJobIds = new List<long>();
+                    _p2Client.CreateScheduleForJob(
+                        request.AccountId,
+                        newJobId,
+                        "RPM VM Power Switch DAG Schedule",
+                        request.CronExpressioon,
+                        request.Note,
+                        request.SavedByUserId
+                    );
                     foreach (var instance in instanceList)
                     {
                         var instJob = _instanceJobRepository.CreateSingleInstanceJob(
-                            new InstanceJobModifyDto() {
+                            new InstanceJobModifyDto()
+                            {
                                 InstId = instance.InstId,
                                 JobId = newJobId,
                                 ActionCode = request.ActionCode,
                                 SavedAt = DateTime.Now
-                             }
+                            }
                         );
                         instJobIds.Add(instJob.SNo);
                     }
