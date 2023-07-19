@@ -1,0 +1,75 @@
+jobName: RPM Power switch DAG (v1.0)
+inputValues:
+  instJson: --vm-list-json-data {Instance_json}
+  credJson: --cred-dict-json-data {Credentials_json}
+  actionCode: --action-code "ACC-OFF" # 켜고 싶으면 "ACC-TON" 으로 설정
+  delaySecond: --seconds 300 # 5분
+  colsonAuth: --auth-user cm-app-colson-user --auth-pw <ColsonPW>
+  colsonTarget: --group-id <Colson Group Chat ID>
+  colsonMsgStart: --message "RPM Power Switch Dag Start"
+  colsonMsgEnd: --message "RPM Power Switch Dag Complete"
+jobTasks:
+- name: tStart
+  isEnabled: true
+  next:
+  - tInstall
+  command: notify.py
+  inputs:
+  - colsonAuth
+  - colsonTarget
+  - colsonMsgStart
+- name: tInstall
+  isEnabled: true
+  next:
+  - tDelay
+  command: install_deps.py
+  inputs:
+  - colsonAuth
+  - colsonTarget
+  - colsonMsgStart
+- name: tDelay
+  isEnabled: true
+  next:
+  - tAws
+  - tAzure
+  - tGoogle
+  command: sleep.py
+  inputs:
+  - delaySecond
+- name: tAws
+  isEnabled: true
+  next:
+  - tEnd
+  command: manage_aws.py
+  inputs:
+  - actionCode
+  - instJson
+  - credJson
+  output: result_aws
+- name: tAzure
+  isEnabled: true
+  next:
+  - tEnd
+  command: manage_azure.py
+  inputs:
+  - actionCode
+  - instJson
+  - credJson
+  output: result_azure
+- name: tGoogle
+  isEnabled: true
+  next:
+  - tEnd
+  command: manage_google.py
+  inputs:
+  - actionCode
+  - instJson
+  - credJson
+  output: result_google
+- name: tEnd
+  isEnabled: true
+  command: install_deps.py
+  inputs:
+  - colsonAuth
+  - colsonTarget
+  - colsonMsgEnd
