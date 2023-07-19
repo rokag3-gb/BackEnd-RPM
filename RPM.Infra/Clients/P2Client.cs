@@ -24,7 +24,7 @@ public class P2Client : IP2Client
         var jobCreateReq = new JobCreateRequest()
         {
             AccountId = accountId,
-            AppCode = "APP_RPM",
+            AppCode = "APP-RPM",
             JobName = "RPM VM Power Switch DAG",
             WorkflowContentYaml = workflowYaml,
             Note = note,
