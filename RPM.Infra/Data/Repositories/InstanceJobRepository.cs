@@ -21,8 +21,8 @@ public class InstanceJobRepository : IInstanceJobRepository
             var fields =
                 "InstId, JobId, ActionCode, SavedAt";
             var queryTemplate =
-                @$"insert into Instance_Job ({fields}) 
-            output inserted.SNo, inserted.InstId, inserted.JobId, inserted.ActionCode, inserted.SavedAt, 
+                @$"insert into Instance_Job ({fields})
+            output inserted.SNo, inserted.InstId, inserted.JobId, inserted.ActionCode, inserted.SavedAt
             values (@InstId, @JobId, @ActionCode, @SavedAt)";
 
             conn.Open();
