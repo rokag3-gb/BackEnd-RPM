@@ -9,20 +9,17 @@ inputValues:
   colsonMsgStart: --message "RPM Power Switch Dag Start"
   colsonMsgEnd: --message "RPM Power Switch Dag Complete"
 jobTasks:
-- name: tStart
-  isEnabled: true
-  next:
-  - tInstall
-  command: notify.py
-  inputs:
-  - colsonAuth
-  - colsonTarget
-  - colsonMsgStart
 - name: tInstall
   isEnabled: true
   next:
-  - tDelay
+  - tStart
   command: install_deps.py
+  inputs: []
+- name: tStart
+  isEnabled: true
+  next:
+  - tDelay
+  command: notify.py
   inputs:
   - colsonAuth
   - colsonTarget
