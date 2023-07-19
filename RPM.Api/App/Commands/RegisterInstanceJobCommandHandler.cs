@@ -86,7 +86,7 @@ public class RegisterInstanceJobCommandHandler : IRequestHandler<RegisterInstanc
 
                     //YAML 파싱
                     var deserializer = new DeserializerBuilder()
-                        .WithNamingConvention(UnderscoredNamingConvention.Instance) // see height_in_inches in sample yml
+                        .WithNamingConvention(CamelCaseNamingConvention.Instance) // see height_in_inches in sample yml
                         .Build();
                     var dag = deserializer.Deserialize<Job>(fileContent);
                     dag.InputValues["actionCode"] = $"--action-code {request.ActionCode}";
