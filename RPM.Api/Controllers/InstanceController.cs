@@ -102,6 +102,7 @@ public class InstanceController : ControllerBase
         [FromBody] InstancesJobRegisterDto registerParams
     )
     {
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var result = await _mediator.Send(
             new RegisterInstanceJobCommand()
             {
@@ -109,7 +110,7 @@ public class InstanceController : ControllerBase
                 InstanceIds = registerParams.InstIds,
                 ActionCode = registerParams.ActionCode,
                 Note = "",
-                SavedByUserId = ""
+                SavedByUserId = userId?? ""
             }
         );
         if (result != 0)
