@@ -20,6 +20,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
     <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Dapper.SqlBuilder" Version="2.0.78" />
+    <PackageReference Include="YamlDotNet" Version="13.1.1" />
     <ProjectReference Include="..\RPM.Domain\RPM.Domain.csproj" />
     <ProjectReference Include="..\P2.Server\P2.ApiServiceProto\P2.ApiServiceProto.csproj" />
   </ItemGroup>
