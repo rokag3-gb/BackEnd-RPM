@@ -1,12 +1,27 @@
 using Grpc.Net.Client;
 using P2.API.Services.Schedule;
 using P2.API.Services.Job;
+using P2.API.Services.Commons;
+
 
 namespace RPM.Infra.Clients;
 
-public interface IP2Client {
-    Task<long> RegisterJobYaml(long accountId, string workflowYaml, string note, string savedByUserId);
-    void CreateScheduleForJob(long accountId, long jobId, string scheduleName, string cronExpression, string note, string savedByUserId);
+public interface IP2Client
+{
+    Task<long> RegisterJobYaml(
+        long accountId,
+        string workflowYaml,
+        string note,
+        string savedByUserId
+    );
+    void CreateScheduleForJob(
+        long accountId,
+        long jobId,
+        string scheduleName,
+        string cronExpression,
+        string note,
+        string savedByUserId
+    );
 }
 
 public class P2Client : IP2Client
@@ -18,7 +33,12 @@ public class P2Client : IP2Client
         _grpcChannel = GrpcChannel.ForAddress(serviceAddress);
     }
 
-    public async Task<long> RegisterJobYaml(long accountId, string workflowYaml, string note, string savedByUserId)
+    public async Task<long> RegisterJobYaml(
+        long accountId,
+        string workflowYaml,
+        string note,
+        string savedByUserId
+    )
     {
         var jobClient = new JobCreateApiService.JobCreateApiServiceClient(_grpcChannel);
         var jobCreateReq = new JobCreateRequest()
@@ -35,7 +55,14 @@ public class P2Client : IP2Client
         return res.JobId;
     }
 
-    public void CreateScheduleForJob(long accountId, long jobId, string scheduleName, string cronExpression, string note, string savedByUserId)
+    public void CreateScheduleForJob(
+        long accountId,
+        long jobId,
+        string scheduleName,
+        string cronExpression,
+        string note,
+        string savedByUserId
+    )
     {
         var client = new ScheduleCreateApiService.ScheduleCreateApiServiceClient(_grpcChannel);
         var request = new CreateSchedulesRequest() { JobId = jobId };
@@ -53,5 +80,14 @@ public class P2Client : IP2Client
             }
         );
         var response = client.CreateSchedules(request);
+    }
+
+    public IEnumerable<JobScheduleData> GetSchedules(long jobId)
+    {
+        var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
+        var request = new ScheduleGetRequest() { JobId = jobId };
+        var response = client.GetSchedulesByJob(request);
+        var list = response.Schedules.ToList();
+        return list;
     }
 }
