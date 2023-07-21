@@ -3,7 +3,6 @@ using P2.API.Services.Schedule;
 using P2.API.Services.Job;
 using P2.API.Services.Commons;
 
-
 namespace RPM.Infra.Clients;
 
 public interface IP2Client
@@ -22,6 +21,8 @@ public interface IP2Client
         string note,
         string savedByUserId
     );
+
+    IEnumerable<JobScheduleData> GetSchedules(long jobId);
 }
 
 public class P2Client : IP2Client
