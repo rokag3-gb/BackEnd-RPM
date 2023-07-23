@@ -1,4 +1,4 @@
-using RPM.Domain.Dto;
+﻿using RPM.Domain.Dto;
 using RPM.Domain.Models;
 using RPM.Infra.Data;
 using Dapper;
@@ -33,5 +33,28 @@ public class InstanceJobQueries : IInstanceJobQueries
             conn.Open();
             return conn.Query<InstanceJob>(template.RawSql, template.Parameters).AsList();
         }
+    }
+
+    /// <summary>
+    /// InstanceId를 기준으로 On-Off 둘 다 설정되어 있는 레코드를 조회합니다
+    /// </summary>
+    public async Task<IEnumerable<InstanceJob>> GetInstanceJobsByOnOffPair()
+    {
+        using var conn = _rpmDbConn.CreateConnection();
+
+        conn.Open();
+        string sql = @"
+select t1.InstId, t1.JobId, t1.ActionCode from instance_job as t1
+where (exists(
+    select null 
+    from instance_job as t2
+    where (t2.actioncode = 'ACT-TON') and (t1.instid = t2.instid)
+    )) and (exists(
+    select null 
+    from instance_job as t3
+    where (t3.actioncode = 'ACT-Off') and (t1.instid = t3.instid)
+    ))";
+
+        return await conn.QueryAsync<InstanceJob>(sql);
     }
 }
