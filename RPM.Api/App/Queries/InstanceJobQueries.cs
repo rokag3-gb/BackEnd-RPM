@@ -25,7 +25,8 @@ public class InstanceJobQueries : IInstanceJobQueries
             var builder = new SqlBuilder().Select(selects);
             builder = builder.InnerJoin("Instance AS I on J.InstId = I.InstId");
             builder = builder.Where("I.AccountId = @accId", new { accId = accountId });
-            if(instanceIds != null && instanceIds.AsList().Count > 0){
+            if (instanceIds != null && instanceIds.AsList().Count > 0)
+            {
                 builder = builder.Where("I.InstId IN @instanceIds", new { instanceIds = instanceIds });
             }
             var template = builder.AddTemplate(queryTemplate);
@@ -35,26 +36,23 @@ public class InstanceJobQueries : IInstanceJobQueries
         }
     }
 
-    /// <summary>
-    /// InstanceId를 기준으로 On-Off 둘 다 설정되어 있는 레코드를 조회합니다
-    /// </summary>
-    public async Task<IEnumerable<InstanceJob>> GetInstanceJobsByOnOffPair()
+    public async Task<IEnumerable<InstanceJob>> GetInstanceJobsByOnOffPair(long accountId)
     {
         using var conn = _rpmDbConn.CreateConnection();
-
         conn.Open();
-        string sql = @"
-select t1.InstId, t1.JobId, t1.ActionCode from instance_job as t1
-where (exists(
-    select null 
-    from instance_job as t2
-    where (t2.actioncode = 'ACT-TON') and (t1.instid = t2.instid)
-    )) and (exists(
-    select null 
-    from instance_job as t3
-    where (t3.actioncode = 'ACT-Off') and (t1.instid = t3.instid)
-    ))";
 
-        return await conn.QueryAsync<InstanceJob>(sql);
+        var queryTemplate = "select t1.InstId, t1.JobId, t1.ActionCode from instance_job as t1 /**innerjoin**/ /**where**/";
+
+        var builder = new SqlBuilder();
+        var template = builder.AddTemplate(queryTemplate);
+        builder.InnerJoin("Instance i on t1.InstId = i.InstId");
+        builder.Where(@"
+(exists(select null from instance_job as t2
+where (t2.actioncode = 'ACT-TON') and (t1.instid = t2.instid))) 
+and (exists(select null from instance_job as t3
+where (t3.actioncode = 'ACT-OFF') and (t1.instid = t3.instid))) 
+and i.AccountId = @AccountId", new { AccountId = accountId });
+
+        return await conn.QueryAsync<InstanceJob>(template.RawSql, template.Parameters);
     }
 }

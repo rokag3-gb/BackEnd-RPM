@@ -1,7 +1,11 @@
-using Grpc.Net.Client;
+﻿using Grpc.Net.Client;
 using P2.API.Services.Schedule;
 using P2.API.Services.Job;
 using P2.API.Services.Commons;
+using System.Collections;
+using P2.API.Services.Run;
+using Google.Cloud.Compute.V1;
+using Grpc.Core;
 
 namespace RPM.Infra.Clients;
 
@@ -23,6 +27,7 @@ public interface IP2Client
     );
 
     IEnumerable<JobScheduleData> GetSchedules(long jobId);
+    Task<IEnumerable<RunData>> GetRuns(IEnumerable<long> jobIds, DateTime from, DateTime to, IEnumerable<RunState> runStates, string token);
 }
 
 public class P2Client : IP2Client
@@ -90,5 +95,24 @@ public class P2Client : IP2Client
         var response = client.GetSchedulesByJob(request);
         var list = response.Schedules.ToList();
         return list;
+    }
+
+    /// <summary>
+    /// P2의 Run 데이터를 조회합니다
+    /// </summary>
+    public async Task<IEnumerable<RunData>> GetRuns(IEnumerable<long> jobIds, DateTime from, DateTime to, IEnumerable<RunState> runStates, string token)
+    {
+        var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
+
+        var headers = new Grpc.Core.Metadata();
+        headers.Add("Authorization", $"Bearer {token}");
+
+        var request = new RunGetByJobRequest();
+        request.PeriodFrom = from.ToString("o");
+        request.PeriodTo = to.ToString("o");
+        request.JobIds.AddRange(jobIds);
+        request.RunState.AddRange(runStates);
+        var response = await client.GetListByJobAsync(request, headers);
+        return response.Runs;
     }
 }
