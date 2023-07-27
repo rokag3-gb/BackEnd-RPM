@@ -48,7 +48,8 @@ namespace RPM.Api.Controllers
             var endMonthDate = startMonthDate.AddMonths(1); //new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59);
             var monthSpan = endMonthDate.Subtract(startMonthDate);
 
-            var instanceJobs = await _instanceJobQueries.GetInstanceJobsByOnOffPair(accountId);
+            //var instanceJobs = await _instanceJobQueries.GetInstanceJobsByOnOffPair(accountId);
+            var  instanceJobs = _instanceJobQueries.GetInstanceJobs(accountId, null);
             var instances = _instanceQueries.GetInstancesByIds(accountId, instanceJobs.Select(ij => ij.InstId));
             var prices = await _instancePriceQueries.Get(instanceJobs.Select(ij => ij.InstId));
             var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
@@ -94,7 +95,7 @@ namespace RPM.Api.Controllers
                 }
 
                 DateTime? activePeriodFrom = null;
-                TimeSpan totalActivePeriod = TimeSpan.Zero;
+                TimeSpan? totalActivePeriod = null;
                 foreach (var run in cost.Runs)
                 {
                     if (run.ActionCode == "ACT-TON")
@@ -110,11 +111,13 @@ namespace RPM.Api.Controllers
 
                         var activePeriod = run.RunDate.Subtract(activePeriodFrom.Value);
                         Debug.WriteLine($"{cost.Instance.InstId} : active period - {activePeriod.TotalHours}");
-                        totalActivePeriod = totalActivePeriod.Add(activePeriod);
+                        if (totalActivePeriod == null)
+                            totalActivePeriod = TimeSpan.Zero;
+                        totalActivePeriod = totalActivePeriod.Value.Add(activePeriod);
                         activePeriodFrom = null;
                     }
                 }
-                Debug.WriteLine($"{cost.Instance.InstId} : total active period - {totalActivePeriod.TotalHours}");
+                Debug.WriteLine($"{cost.Instance.InstId} : total active period - {totalActivePeriod.GetValueOrDefault().TotalHours}");
 
                 var item = new InstanceCostDto
                 {
@@ -122,9 +125,9 @@ namespace RPM.Api.Controllers
                     InstanceName = cost.Instance.Name,
                     InstanceType = cost.Instance.Type,
                     Vender = cost.Instance.Vendor,
-                    ActiveDuration = totalActivePeriod,
+                    ActiveDuration = totalActivePeriod != null ? totalActivePeriod : null,
                     WholeMonthCost = monthSpan.TotalHours * cost.Price.Price_KRW,
-                    RealCost = totalActivePeriod.TotalHours * cost.Price.Price_KRW
+                    RealCost = totalActivePeriod != null ? totalActivePeriod.Value.TotalHours * cost.Price.Price_KRW : null
                 };
                 response.Add(item);
             }
@@ -147,8 +150,8 @@ namespace RPM.Api.Controllers
         public string InstanceName { get; set; }
         public string InstanceType { get; set; }
         public string Vender { get; set; }
-        public TimeSpan ActiveDuration { get; set; }
+        public TimeSpan? ActiveDuration { get; set; }
         public double WholeMonthCost { get; set; }
-        public double RealCost { get; set; }
+        public double? RealCost { get; set; }
     }
 }
