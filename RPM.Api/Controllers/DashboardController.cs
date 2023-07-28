@@ -124,7 +124,7 @@ namespace RPM.Api.Controllers
                     InstanceName = cost.Instance.Name,
                     InstanceType = cost.Instance.Type,
                     Vender = cost.Instance.Vendor,
-                    ActiveDuration = totalActivePeriod != null ? totalActivePeriod : null,
+                    ActiveDuration = totalActivePeriod != null ? totalActivePeriod : monthSpan,
                     WholeMonthCost = monthSpan.TotalHours * cost.Price.Price_KRW,
                     RealCost = totalActivePeriod != null ? totalActivePeriod.Value.TotalHours * cost.Price.Price_KRW : null
                 };
