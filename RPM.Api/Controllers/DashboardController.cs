@@ -45,13 +45,12 @@ namespace RPM.Api.Controllers
             var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
             var startMonthDate = new DateTime(year, month, 1);
             var startPreviousMonthDate = startMonthDate.AddMonths(-1);
-            var endMonthDate = startMonthDate.AddMonths(1); //new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59);
+            var endMonthDate = startMonthDate.AddMonths(1);
             var monthSpan = endMonthDate.Subtract(startMonthDate);
 
-            //var instanceJobs = await _instanceJobQueries.GetInstanceJobsByOnOffPair(accountId);
-            var  instanceJobs = _instanceJobQueries.GetInstanceJobs(accountId, null);
-            var instances = _instanceQueries.GetInstancesByIds(accountId, instanceJobs.Select(ij => ij.InstId));
-            var prices = await _instancePriceQueries.Get(instanceJobs.Select(ij => ij.InstId));
+            var instanceJobs = await _instanceJobQueries.GetInstanceJobsAsync(accountId, null);
+            var instances = _instanceQueries.GetInstances(accountId, null);
+            var prices = await _instancePriceQueries.Get(instances.Select(ij => ij.InstId));
             var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
                                                startPreviousMonthDate,
                                                new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
@@ -78,7 +77,7 @@ namespace RPM.Api.Controllers
                                                            Instance = ip.instance,
                                                            Price = ip.price,
                                                            LastRecordOfPreviousMonth = irs.Where(ir => ir.runDate < startMonthDate)?.LastOrDefault(),
-                                                           Runs = irs.ToList()
+                                                           Runs = irs.Where(ir => ir.runDate >= startMonthDate).ToList()
                                                        };
                                                    });
 
