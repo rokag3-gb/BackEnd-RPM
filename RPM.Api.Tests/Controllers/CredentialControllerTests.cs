@@ -11,6 +11,7 @@ using System.Security.Principal;
 using System.Security.Claims;
 using Moq;
 using AutoMapper;
+using RPM.Infra.Clients;
 
 namespace RPM.Api.Tests.Controllers;
 
@@ -26,7 +27,7 @@ public class CredentialControllerTests
     }
 
     [Fact]
-    public void GetById()
+    public async void GetById()
     {
         var mockQueries = new Mock<ICredentialQueries>();
         var mockData = new Credential()
@@ -45,17 +46,19 @@ public class CredentialControllerTests
             null,
             mockQueries.Object,
             Mock.Of<ICredentialRepository>(),
+            Mock.Of<IAMClient>(),
+            Mock.Of<SalesClient>(),
             Mock.Of<IMapper>()
         );
 
-        var result = controller.GetById(1, 1);
+        var result = await controller.GetById(1, 1);
         Assert.IsType<Credential>(result);
         Assert.Equal("VEN-XXX", result.Vendor);
         Assert.Equal("test", result.CredName);
     }
 
     [Fact]
-    public void GetList()
+    public async void GetList()
     {
         var mockQueries = new Mock<ICredentialQueries>();
         var mockData = new List<Credential>()
@@ -93,16 +96,18 @@ public class CredentialControllerTests
             null,
             mockQueries.Object,
             Mock.Of<ICredentialRepository>(),
+            Mock.Of<IAMClient>(),
+            Mock.Of<SalesClient>(),
             Mock.Of<IMapper>()
         );
 
-        var result = controller.GetList(1, "", "", true);
+        var result = await controller.GetList(1, "", "", true);
         Assert.Equal(true, typeof(IEnumerable<Credential>).IsAssignableFrom(result.GetType()));
         Assert.Equal(2, result.Count());
     }
 
     [Fact]
-    public void AddCredential()
+    public async void AddCredential()
     {
         var mockRepo = new Mock<ICredentialRepository>();
         var mockInput = new CredentialModifyCommand();
@@ -135,6 +140,8 @@ public class CredentialControllerTests
             null,
             Mock.Of<ICredentialQueries>(),
             mockRepo.Object,
+            Mock.Of<IAMClient>(),
+            Mock.Of<SalesClient>(),
             _mapper
         ){
             ControllerContext = new ControllerContext()
@@ -185,6 +192,8 @@ public class CredentialControllerTests
             null,
             Mock.Of<ICredentialQueries>(),
             mockRepo.Object,
+            Mock.Of<IAMClient>(),
+            Mock.Of<SalesClient>(),
             _mapper
         ){
             ControllerContext = new ControllerContext()
@@ -212,6 +221,8 @@ public class CredentialControllerTests
             null,
             Mock.Of<ICredentialQueries>(),
             mockRepo.Object,
+            Mock.Of<IAMClient>(),
+            Mock.Of<SalesClient>(),
             _mapper
         );
 
