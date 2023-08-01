@@ -49,7 +49,7 @@ public class InstanceQueries : IInstanceQueries
         {
             var queryTemplate = "select /**select**/ from Instance /**where**/ /**orderby**/";
             var selects =
-                @"InstId, AccountId, CredId, Vendor, ResourceId, Name, Region, Type, Tags, Info, Note, SavedAt, SaverId";
+                @"InstId, AccountId, CredId, Vendor, ResourceId, IsEnable, Name, Region, Type, Tags, Info, Note, SavedAt, SaverId";
 
             var builder = new SqlBuilder().Select(selects);
             builder = builder.Where("AccountId = @accId", new { accId = accountId });
@@ -68,7 +68,7 @@ public class InstanceQueries : IInstanceQueries
         {
             var queryTemplate = "select /**select**/ from Instance /**where**/";
             var selects =
-                @"InstId, AccountId, CredId, Vendor, ResourceId, Name, Region, Type, Tags, Info, Note, SavedAt, SaverId";
+                @"InstId, AccountId, CredId, Vendor, ResourceId, IsEnable, Name, Region, Type, Tags, Info, Note, SavedAt, SaverId";
 
             var builder = new SqlBuilder().Select(selects);
             builder = builder.Where("AccountId = @accId", new { accId = accountId });
