@@ -7,6 +7,7 @@ public class Instance
     public long CredId { get; set; }
     public string Vendor { get; set; }
     public string ResourceId { get; set; }
+    public bool IsEnable { get; set; }
     public string Name { get; set; }
     public string Region { get; set; }
     public string Type { get; set; }
