@@ -78,10 +78,12 @@ public class InstanceController : ControllerBase
             from user in joinedUsers.DefaultIfEmpty()
             select new InstanceDto
             {
+                InstId = instance.InstId,
                 AccountId = instance.AccountId,
                 CredId = instance.CredId,
                 Vendor = instance.Vendor,
                 ResourceId = instance.ResourceId,
+                IsEnable = instance.IsEnable,
                 Name = instance.Name,
                 Region = instance.Region,
                 Type = instance.Type,
@@ -138,10 +140,12 @@ public class InstanceController : ControllerBase
         var user = await _iamClient.ResolveUser(token, instance.SaverId);
         return new InstanceDto()
         {
+            InstId = instance.InstId,
             AccountId = instance.AccountId,
             CredId = instance.CredId,
             Vendor = instance.Vendor,
             ResourceId = instance.ResourceId,
+            IsEnable = instance.IsEnable,
             Name = instance.Name,
             Region = instance.Region,
             Type = instance.Type,
