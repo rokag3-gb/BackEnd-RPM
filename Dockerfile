@@ -5,7 +5,7 @@ WORKDIR /opt/chisel
 RUN go build ./cmd/chisel
 
 # https://hub.docker.com/_/microsoft-dotnet
-FROM mcr.microsoft.com/dotnet/sdk:6.0-jammy AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
 
 COPY --from=chisel /opt/chisel/chisel /usr/bin/
 RUN mkdir /rootfs \
@@ -20,7 +20,7 @@ WORKDIR /source/RPM.Api
 RUN dotnet publish -c Release -o /app --self-contained false
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:6.0-jammy-chiseled
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 
