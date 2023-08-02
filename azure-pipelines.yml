@@ -32,7 +32,7 @@ stages:
         vmImage: $(vmImageName)
       steps:
         - checkout: self
-          submodules: true
+          submodules: recursive
         - task: PublishBuildArtifacts@1
           displayName: 'Publish Artifact'
           inputs:
@@ -62,7 +62,7 @@ stages:
           clean: true
         - task: UseDotNet@2
           inputs:
-            version: '6.x'
+            version: '7.x'
         - task: DotNetCoreCLI@2
           displayName: Restore dependencies
           inputs:
