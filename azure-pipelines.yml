@@ -60,10 +60,14 @@ stages:
               $(tag)
     - job: Docs
       displayName: Docs
+      uses:                        #This section must be present
+        repositories:
+        - p2server
       pool:
         vmImage: $(vmImageName)
       steps:
         - checkout: self
+          submodules: recursive
         - checkout: git://SDTeam-Project/SDTeam-Docs
           persistCredentials: true
           clean: true
