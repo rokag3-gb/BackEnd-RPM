@@ -1,6 +1,10 @@
 resources:
-- repo: self
-  fetchDepth: 1
+  repositories:
+    - repository: p2server   #An ID to reference this resource
+      type: git
+      name: P2.Server           #The name of the repository for my submodule
+    - repository: self
+      fetchDepth: 1
 
 trigger:
 - main
@@ -28,6 +32,9 @@ stages:
     jobs:
     - job: Build
       displayName: Build
+      uses:                        #This section must be present
+        repositories:
+        - p2server
       pool:
         vmImage: $(vmImageName)
       steps:
