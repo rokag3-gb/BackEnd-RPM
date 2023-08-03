@@ -12,6 +12,7 @@ using System.Security.Claims;
 using AutoMapper;
 using MediatR;
 using RPM.Infra.Clients;
+using System.Text.Json;
 
 namespace RPM.Api.Controllers;
 
@@ -21,6 +22,7 @@ public class InstanceController : ControllerBase
 {
     private readonly ILogger<InstanceController> _logger;
     private readonly IInstanceQueries _instanceQueries;
+    private readonly ICredentialQueries _credentialQueries;
     private readonly IInstanceRepository _instanceRepository;
     private readonly IAMClient _iamClient;
     private readonly IMediator _mediator;
@@ -29,6 +31,7 @@ public class InstanceController : ControllerBase
     public InstanceController(
         ILogger<InstanceController> logger,
         IInstanceQueries instanceQueries,
+        ICredentialQueries credentialQueries,
         IInstanceRepository instanceRepository,
         IAMClient iamClient,
         IMediator mediator,
@@ -37,6 +40,7 @@ public class InstanceController : ControllerBase
     {
         _logger = logger;
         _instanceQueries = instanceQueries;
+        _credentialQueries = credentialQueries;
         _instanceRepository = instanceRepository;
         _iamClient = iamClient;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
@@ -112,7 +116,7 @@ public class InstanceController : ControllerBase
                 InstanceIds = registerParams.InstIds,
                 ActionCode = registerParams.ActionCode,
                 Note = "",
-                SavedByUserId = userId?? "",
+                SavedByUserId = userId ?? "",
                 CronExpressioon = registerParams.CronExpression
             }
         );
@@ -157,6 +161,38 @@ public class InstanceController : ControllerBase
         };
     }
 
+    [HttpGet]
+    [Route("{accountId}/instance/{instanceId}/status")]
+    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없음")]
+    public async Task<ActionResult<string>> GetInstanceStatusById(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
+    )
+    {
+        var instance = _instanceQueries.GetInstanceById(accountId, instanceId);
+        if (instance == null)
+        {
+            return NotFound();
+        }
+        var credential = _credentialQueries.GetCredentialById(accountId, instance.CredId);
+        var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
+        var vmStatus = "";
+        switch (instance.Vendor)
+        {
+            case "VEN-AWS":
+                var aws = new AWSClient(
+                    credData.GetProperty("access_key_id").GetString(),
+                    credData.GetProperty("access_key_secret").GetString()
+                );
+                vmStatus = await aws.GetAwsVMStatus(
+                    credData.GetProperty("region_code").GetString(),
+                    instance.ResourceId
+                );
+                break;
+        }
+        return vmStatus;
+    }
+
     [HttpPut]
     [Route("{accountId}/instance/{instanceId}")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -195,8 +231,6 @@ public class InstanceController : ControllerBase
         }
         return Ok();
     }
-
-    
 
     [HttpPost]
     [Route("{accountId}/instance/fetchWithCredential/{credId}")]
