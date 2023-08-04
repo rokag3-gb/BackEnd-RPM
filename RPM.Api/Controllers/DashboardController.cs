@@ -21,24 +21,34 @@ namespace RPM.Api.Controllers
         private readonly IInstanceJobQueries _instanceJobQueries;
         private readonly IInstanceQueries _instanceQueries;
         private readonly IInstancePriceQueries _instancePriceQueries;
+        private readonly IInstanceSnapshotQueries _instanceSnapshotQueries;
         private readonly IP2Client _p2Client;
 
         public DashboardController(ILogger<DashboardController> logger,
                                    IInstanceJobQueries instanceJobQueries,
                                    IInstanceQueries instanceQueries,
                                    IInstancePriceQueries instancePriceQueries,
+                                   IInstanceSnapshotQueries instanceSnapshotQueries,
                                    IP2Client p2Client)
         {
             _logger = logger;
             _instanceJobQueries = instanceJobQueries;
             _instanceQueries = instanceQueries;
             _instancePriceQueries = instancePriceQueries;
+            _instanceSnapshotQueries = instanceSnapshotQueries;
             _p2Client = p2Client;
         }
 
+        /// <summary>
+        /// 인스턴스들의 사용 금액을 조회합니다.
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("{accountId}/instancescost")]
-        public async Task<ActionResult<IEnumerable<dynamic>>> InstancesCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        public async Task<ActionResult<IEnumerable<InstanceCostDto>>> InstancesCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
                                                                             [SwaggerParameter("검색 년도", Required = true)] int year,
                                                                             [SwaggerParameter("검색 월", Required = true)] int month)
         {
@@ -132,6 +142,49 @@ namespace RPM.Api.Controllers
             }
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// 해당 년도의 월별 활성화 된 인스턴스의 수를 조회합니다
+        /// </summary>
+        [HttpGet]
+        [Route("{accountId}/activatedinstances")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> ActivatedInstancesPerMonth(
+            [SwaggerParameter("대상 조직 ID", Required = true)] long accountId, 
+            [SwaggerParameter("검색 년도", Required = true)] int year)
+        {
+            var snapshots = await _instanceSnapshotQueries.List(accountId, year);
+            var groups = snapshots.GroupBy(s => s.SnapshotMonth, (yearMonth, snapGroup) => new
+            {
+                Date = new { year = int.Parse(yearMonth.Substring(0, 4)), month = int.Parse(yearMonth.Substring(4, 2)) },
+                Count = snapGroup.Count(),
+                AzureTypes = snapGroup.Where(i => i.Vendor == "VEN-AZT").GroupBy(ins => ins.Type, (type, i) => new
+                {
+                    Type = type,
+                    Count = i.Count()
+                }),
+                AwsTypes = snapGroup.Where(i => i.Vendor == "VEN-AWS").GroupBy(ins => ins.Type, (type, i) => new
+                {
+                    Type = type,
+                    Count = i.Count()
+                }),
+                GcTypes = snapGroup.Where(i => i.Vendor == "VEN-GCP").GroupBy(ins => ins.Type, (type, i) => new
+                {
+                    Type = type,
+                    Count = i.Count()
+                }),
+                Instances = snapGroup.Select(i => new
+                {
+                    InstanceId = i.InstId,
+                    AccountId = i.AccountId,
+                    Vender = i.Vendor,
+                    Name = i.Name,
+                    SnapshotMonth = i.SnapshotMonth,
+                    Type = i.Type
+                })
+            });
+
+            return Ok(groups);
         }
 
         private record InstanceCost
