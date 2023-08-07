@@ -13,7 +13,7 @@ namespace RPM.Api.App.Queries
             _rpmDbConn = rpmDbConn;
         }
 
-        public async Task<IEnumerable<InstanceSnapshot>> List(long accountId, int year)
+        public async Task<IEnumerable<InstanceSnapshot>> List(long accountId, int year, int month)
         {
             using var conn = _rpmDbConn.CreateConnection();
             conn.Open();
@@ -29,7 +29,17 @@ namespace RPM.Api.App.Queries
 
             builder.Where("AccountId = @accountId", new { accountId = accountId });
             builder.Where("IsEnable = @isEnable", new { isEnable = true });
-            builder.Where("left(t0.SnapshotMonth, 4) = @year", new { year = year });
+
+            var to = new DateTime(year, month, 01);
+            var from = to.AddMonths(-11);
+            List<string> snapshotMonths = new List<string>();
+
+            for (var dt = from; dt <= to; dt = dt.AddMonths(1))
+            {
+                snapshotMonths.Add(dt.ToString("yyyyMM"));
+            }
+
+            builder.Where("t0.SnapshotMonth in @months", new { months = snapshotMonths });
 
             return await conn.QueryAsync<InstanceSnapshot>(template.RawSql, template.Parameters);
         }
