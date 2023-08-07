@@ -148,8 +148,8 @@ namespace RPM.Api.Controllers
         /// 해당 년도의 월별 활성화 된 인스턴스의 수를 조회합니다
         /// </summary>
         [HttpGet]
-        [Route("{accountId}/activatedinstances")]
-        public async Task<ActionResult<IEnumerable<dynamic>>> ActivatedInstancesPerMonth(
+        [Route("{accountId}/monthlyActivatedInstances")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> MonthlyActivatedInstances(
             [SwaggerParameter("대상 조직 ID", Required = true)] long accountId, 
             [SwaggerParameter("검색 년도", Required = true)] int year)
         {
