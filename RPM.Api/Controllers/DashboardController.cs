@@ -65,8 +65,24 @@ namespace RPM.Api.Controllers
                                                new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
                                                new[] { RunState.Success },
                                                token);
+            var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
 
-            var instanceAndPrice = instances.Join(prices,
+            var instanceWithVenderName = instances.GroupJoin(venderList ?? Enumerable.Empty<Code>(),
+                                                             i => i.Vendor,
+                                                             v => v.CodeKey,
+                                                             (i, v) => new { i, v })
+                                                  .SelectMany(x => x.v.DefaultIfEmpty(),
+                                                              (x, v) =>
+                                                              new
+                                                              {
+                                                                  InstId = x.i.InstId,
+                                                                  Name = x.i.Name,
+                                                                  Type = x.i.Type,
+                                                                  Vendor = x.i.Vendor,
+                                                                  VendorName = v?.Name
+                                                              });
+
+            var instanceAndPrice = instanceWithVenderName.Join(prices,
                                                   i => i.InstId,
                                                   p => p.InstId,
                                                   (i, p) => (instance: i, price: p));
@@ -81,7 +97,7 @@ namespace RPM.Api.Controllers
                                                    ir => ir.instanceId,
                                                    (ip, irs) =>
                                                    {
-                                                       return new InstanceCost
+                                                       return new 
                                                        {
                                                            Instance = ip.instance,
                                                            Price = ip.price,
@@ -95,10 +111,10 @@ namespace RPM.Api.Controllers
             {
                 if (cost.Runs.Any() == true)
                 {
-                    if (cost.LastRecordOfPreviousMonth != null && cost.LastRecordOfPreviousMonth.Value.ActionCode == "ACT-TON")
+                    if (cost.LastRecordOfPreviousMonth != null && cost.LastRecordOfPreviousMonth.Value.actionCode == "ACT-TON")
                         cost.Runs.Insert(0, (cost.Instance.InstId, "ACT-TON", new DateTime(year, month, 1)));
 
-                    if (cost.Runs.Last().ActionCode == "ACT-TON")
+                    if (cost.Runs.Last().actionCode == "ACT-TON")
                         cost.Runs.Add((cost.Instance.InstId, "ACT-OFF", endMonthDate));
                 }
 
@@ -106,18 +122,18 @@ namespace RPM.Api.Controllers
                 TimeSpan? totalActivePeriod = null;
                 foreach (var run in cost.Runs)
                 {
-                    if (run.ActionCode == "ACT-TON")
+                    if (run.actionCode == "ACT-TON")
                     {
                         if (activePeriodFrom != null)
                             continue;
-                        activePeriodFrom = run.RunDate;
+                        activePeriodFrom = run.runDate;
                     }
                     else
                     {
                         if (activePeriodFrom == null)
                             continue;
 
-                        var activePeriod = run.RunDate.Subtract(activePeriodFrom.Value);
+                        var activePeriod = run.runDate.Subtract(activePeriodFrom.Value);
                         Debug.WriteLine($"{cost.Instance.InstId} : active period - {activePeriod.TotalHours}");
                         if (totalActivePeriod == null)
                             totalActivePeriod = TimeSpan.Zero;
@@ -132,7 +148,8 @@ namespace RPM.Api.Controllers
                     InstanceId = cost.Instance.InstId,
                     InstanceName = cost.Instance.Name,
                     InstanceType = cost.Instance.Type,
-                    Vender = cost.Instance.Vendor,
+                    Vendor = cost.Instance.Vendor,
+                    VendorName = cost.Instance.VendorName,
                     ActiveDuration = totalActivePeriod != null ? totalActivePeriod : monthSpan,
                     WholeMonthCost = monthSpan.TotalHours * cost.Price.Price_KRW,
                     RealCost = totalActivePeriod != null ? totalActivePeriod.Value.TotalHours * cost.Price.Price_KRW : null
@@ -155,30 +172,32 @@ namespace RPM.Api.Controllers
             [SwaggerParameter("검색 월", Required = true)] int month)
         {
             var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            var codeList = await _salesClient.GetKindCodeChilds(token, "VEN");
+            var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
 
             var snapshots = await _instanceSnapshotQueries.List(accountId, year, month);
-            var joinSnapshots = snapshots.Join(codeList, 
-                                               snap => snap.Vendor, 
-                                               code => code.CodeKey, 
-                                               (snap, code) =>
-                                               new 
-                                               {
-                                                   SnapshotMonth = snap.SnapshotMonth,
-                                                   Vendor = snap.Vendor,
-                                                   VenderName = code.Name,
-                                                   Type = snap.Type,
-                                                   InstId = snap.InstId,
-                                                   AccountId = snap.AccountId,
-                                                   Name = snap.Name
-                                               });
+            var joinSnapshots = snapshots.GroupJoin(venderList ?? Enumerable.Empty<Code>(), 
+                                                    snap => snap.Vendor, 
+                                                    code => code.CodeKey, 
+                                                    (snap, vender) => new { snap, vender })
+                                         .SelectMany(x => x.vender.DefaultIfEmpty(),
+                                                    (x, vender) => 
+                                                    new 
+                                                    {
+                                                        SnapshotMonth = x.snap.SnapshotMonth,
+                                                        Vendor = x.snap.Vendor,
+                                                        VenderName = vender?.Name,
+                                                        Type = x.snap.Type,
+                                                        InstId = x.snap.InstId,
+                                                        AccountId = x.snap.AccountId,
+                                                        Name = x.snap.Name
+                                                    });
 
             var groups = joinSnapshots.GroupBy(s => s.SnapshotMonth, (yearMonth, snapGroup) => new
             {
                 Date = new { year = int.Parse(yearMonth.Substring(0, 4)), month = int.Parse(yearMonth.Substring(4, 2)) },
-                //Count = snapGroup.Count(),
-                VenderTypes = snapGroup.GroupBy(ins => ins.Vendor, (vender, venderList) => new
+                VenderTypes = snapGroup.GroupBy(ins => ins.Vendor, (venderCode, venderList) => new
                 {
+                    VenderCode = venderCode,
                     VenderName = venderList.FirstOrDefault()?.VenderName,
                     Total = venderList.Count(),
                     Types = venderList.GroupBy(item => item.Type, (type, typeList) => new
@@ -216,7 +235,8 @@ namespace RPM.Api.Controllers
         public long InstanceId { get; set; }
         public string InstanceName { get; set; }
         public string InstanceType { get; set; }
-        public string Vender { get; set; }
+        public string Vendor { get; set; }
+        public string VendorName { get; set; }
         public TimeSpan? ActiveDuration { get; set; }
         public double WholeMonthCost { get; set; }
         public double? RealCost { get; set; }
