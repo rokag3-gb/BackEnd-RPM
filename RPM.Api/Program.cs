@@ -21,6 +21,7 @@ builder.Services.AddScoped<IInstanceRepository, InstanceRepository>();
 builder.Services.AddScoped<IInstanceJobRepository, InstanceJobRepository>();
 builder.Services.AddScoped<IInstanceJobQueries, InstanceJobQueries>();
 builder.Services.AddScoped<IInstancePriceQueries, InstancePriceQueries>();
+builder.Services.AddScoped<IInstanceSnapshotQueries,  InstanceSnapshotQueries>();
 
 // Add services to the container.
 builder.Services
