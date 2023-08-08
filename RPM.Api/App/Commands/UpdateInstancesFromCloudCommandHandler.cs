@@ -165,7 +165,7 @@ public class UpdateInstancesFromCloudCommandHandler
                 {
                     AccountId = accountId,
                     CredId = credId,
-                    Vendor = "VEN-AZP",
+                    Vendor = "VEN-AZT",
                     ResourceId = vm.Data.Id,
                     Name = vm.Data.Name,
                     Region = vm.Data.Location,
