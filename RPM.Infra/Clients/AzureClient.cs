@@ -3,6 +3,7 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Resources;
+using RPM.Domain.Dto;
 
 namespace RPM.Infra.Clients;
 
@@ -28,9 +29,33 @@ public class AzureClient
             {
                 vmList.Add(vm);
             }
-            
         }
         // var vmCollection = subscription.GetVirtualMachinesAsync();
         return vmList;
+    }
+
+    public async Task<InstancesStatusDto> GetAzureVMStatus(string rgName, string vmName)
+    {
+        // Create an instance of the ComputeManagementClient using your Azure credentials
+        ArmClient armClient = new ArmClient(_credential);
+
+        // Get the VM by resource group name and VM name
+        SubscriptionResource subscription = await armClient.GetDefaultSubscriptionAsync();
+        // first we need to get the resource group
+        ResourceGroupResource resourceGroup = await subscription
+            .GetResourceGroups()
+            .GetAsync(rgName);
+        // Now we get the virtual machine collection from the resource group
+        VirtualMachineCollection vmCollection = resourceGroup.GetVirtualMachines();
+        VirtualMachineResource vm = await vmCollection.GetAsync(vmName);
+        var vmPowerStatues = vm.InstanceView().Value.Statuses;
+        var vmState = vmPowerStatues.Any(
+            s => s.Code == "PowerState/running" || s.Code == "PowerState/starting"
+        );
+        return new InstancesStatusDto(){
+            Status = vmState ? "running" : "stopped",
+            StatusCodeFromVendor = vmPowerStatues[1].Code,
+        };
+        // ... print other properties you want to retrieve
     }
 }
