@@ -204,6 +204,10 @@ public class InstanceController : ControllerBase
                     instance.Name
                 );
                 break;
+            case "VEN-GCP":
+                var gcp = new GoogleCloudClient(credential.CredData);
+                vmStatus = await gcp.GetGcloudComputeEngineStatus(instance.Region, instance.ResourceId);
+                break;
         }
         return vmStatus;
     }

@@ -25,4 +25,12 @@ public class GoogleCloudClient
             .SelectMany(i => i).ToList();
         return instanceList;
     }
+
+    public async Task<string> GetGcloudComputeEngineStatus(string regionCode, string instanceId){
+        var builder = new InstancesClientBuilder() { GoogleCredential  = _credential };
+        var projId = ((ServiceAccountCredential)_credential.UnderlyingCredential).ProjectId;
+        var client = builder.Build();
+        var vm = await client.GetAsync(projId, regionCode, instanceId);
+        return vm.Status == "RUNNING" ? "running" : "stopped";
+    }
 }
