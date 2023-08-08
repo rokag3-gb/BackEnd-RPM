@@ -13,6 +13,7 @@ using AutoMapper;
 using MediatR;
 using RPM.Infra.Clients;
 using System.Text.Json;
+using Azure.Identity;
 
 namespace RPM.Api.Controllers;
 
@@ -188,6 +189,16 @@ public class InstanceController : ControllerBase
                     credData.GetProperty("region_code").GetString(),
                     instance.ResourceId
                 );
+                break;
+            case "VEN-AZT":
+                var azure = new AzureClient(
+                    new ClientSecretCredential(
+                        credData.GetProperty("tenant_id").GetString(),
+                        credData.GetProperty("client_id").GetString(),
+                        credData.GetProperty("client_secret").GetString()
+                    )
+                );
+                vmStatus = await azure.GetAzureVMStatus("", instance.Name);
                 break;
         }
         return vmStatus;
