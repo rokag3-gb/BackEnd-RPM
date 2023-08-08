@@ -2,6 +2,7 @@ using Amazon;
 using Amazon.EC2;
 using Amazon.EC2.Model;
 using Amazon.Runtime;
+using RPM.Domain.Dto;
 using System.Linq;
 
 namespace RPM.Infra.Clients;
@@ -34,7 +35,7 @@ public class AWSClient
         return ec2List;
     }
 
-    public async Task<string> GetAwsVMStatus(string regionCode, string instanceId)
+    public async Task<InstancesStatusDto> GetAwsVMStatus(string regionCode, string instanceId)
     {
         var clientConfig = new AmazonEC2Config
         {
@@ -52,6 +53,9 @@ public class AWSClient
 
         // Iterate through the reservations and instances
         var status = response.Reservations.First().Instances.First().State.Name;
-        return status;
+        return new InstancesStatusDto(){
+            Status = status,
+            StatusCodeFromVendor = status
+        };
     }
 }

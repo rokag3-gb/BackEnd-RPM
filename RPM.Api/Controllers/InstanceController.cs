@@ -165,7 +165,7 @@ public class InstanceController : ControllerBase
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/status")]
     [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없음")]
-    public async Task<ActionResult<string>> GetInstanceStatusById(
+    public async Task<ActionResult<InstancesStatusDto>> GetInstanceStatusById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
     )
@@ -177,7 +177,7 @@ public class InstanceController : ControllerBase
         }
         var credential = _credentialQueries.GetCredentialById(accountId, instance.CredId);
         var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
-        var vmStatus = "";
+        var vmStatus = new InstancesStatusDto();
         switch (instance.Vendor)
         {
             case "VEN-AWS":
