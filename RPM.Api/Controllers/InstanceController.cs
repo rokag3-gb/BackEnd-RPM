@@ -198,7 +198,11 @@ public class InstanceController : ControllerBase
                         credData.GetProperty("client_secret").GetString()
                     )
                 );
-                vmStatus = await azure.GetAzureVMStatus("", instance.Name);
+                var instanceInfo = JsonSerializer.Deserialize<JsonElement>(instance.Info);
+                vmStatus = await azure.GetAzureVMStatus(
+                    instanceInfo.GetProperty("Id").GetProperty("ResourceGroupName").GetString(),
+                    instance.Name
+                );
                 break;
         }
         return vmStatus;

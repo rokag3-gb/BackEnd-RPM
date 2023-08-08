@@ -47,7 +47,8 @@ public class AzureClient
         // Now we get the virtual machine collection from the resource group
         VirtualMachineCollection vmCollection = resourceGroup.GetVirtualMachines();
         VirtualMachineResource vm = await vmCollection.GetAsync(vmName);
-        var vmState = vm.Data.InstanceView.Statuses.Any(
+        var vmPowerStatues = vm.InstanceView().Value.Statuses;
+        var vmState = vmPowerStatues.Any(
             s => s.Code == "PowerState/running" || s.Code == "PowerState/starting"
         );
         return vmState ? "running" : "stopped";
