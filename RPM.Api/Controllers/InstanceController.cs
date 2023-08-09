@@ -14,6 +14,8 @@ using MediatR;
 using RPM.Infra.Clients;
 using System.Text.Json;
 using Azure.Identity;
+using P2.API.Services.Commons;
+using System.Diagnostics;
 
 namespace RPM.Api.Controllers;
 
@@ -28,6 +30,10 @@ public class InstanceController : ControllerBase
     private readonly IAMClient _iamClient;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
+    private readonly IInstanceJobQueries _instanceJobQueries;
+    private readonly IInstancePriceQueries _instancePriceQueries;
+    private readonly IInstanceSnapshotQueries _instanceSnapshotQueries;
+    private readonly IP2Client _p2Client;
 
     public InstanceController(
         ILogger<InstanceController> logger,
@@ -36,7 +42,11 @@ public class InstanceController : ControllerBase
         IInstanceRepository instanceRepository,
         IAMClient iamClient,
         IMediator mediator,
-        IMapper mapper
+        IMapper mapper,
+        IInstanceJobQueries instanceJobQueries,
+        IInstancePriceQueries instancePriceQueries,
+        IInstanceSnapshotQueries instanceSnapshotQueries,
+        IP2Client p2Client
     )
     {
         _logger = logger;
@@ -46,6 +56,10 @@ public class InstanceController : ControllerBase
         _iamClient = iamClient;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
+        _instanceJobQueries = instanceJobQueries;
+        _instancePriceQueries = instancePriceQueries;
+        _instanceSnapshotQueries = instanceSnapshotQueries;
+        _p2Client = p2Client;
     }
 
     // Api for querying list of Credentials
@@ -268,5 +282,135 @@ public class InstanceController : ControllerBase
         );
 
         return Ok(new AffectedRowsDto() { AffectedRows = result });
+    }
+
+    [HttpGet]
+    [Route("{accountId}/instance/{instanceId}/dailyCost")]
+    public async Task<ActionResult<IEnumerable<dynamic>>> DailyCost(long accountId, long instanceId, int year, int month)
+    {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var startMonthDate = new DateTime(year, month, 1);
+        var startPreviousMonthDate = startMonthDate.AddMonths(-1);
+        var endMonthDate = startMonthDate.AddMonths(1);
+        var monthSpan = endMonthDate.Subtract(startMonthDate);
+
+        var snap = await _instanceSnapshotQueries.Get(accountId, instanceId, year, month);
+        if (snap == null)
+        {
+            _logger.LogInformation($"해당 리소스(account id - {accountId}, inst id - {instanceId})에 대한 RPM 워크플로가 없음.");
+            return Ok(new List<dynamic>());
+        }
+
+        var price = await _instancePriceQueries.Get(new[] { instanceId }).ContinueWith(t => t.Result.FirstOrDefault());
+        if (price == null)
+        {
+            _logger.LogError($"가격 정보를 찾을 수 없습니다. (account id - {accountId}, inst id - {instanceId})");
+            return StatusCode(500);
+        }
+
+        var instanceJobs = await _instanceJobQueries.GetInstanceJobsAsync(accountId, new[] { instanceId });
+        if (instanceJobs == null)
+            return Ok(); //todo. cost max
+
+        //var instance = _instanceQueries.GetInstanceById(accountId, instanceId);
+        var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
+                                           startMonthDate,
+                                           new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
+                                           new[] { RunState.Success },
+                                           token);
+
+        var dt = new DateTime(startPreviousMonthDate.Year,
+                              startPreviousMonthDate.Month,
+                              DateTime.DaysInMonth(startPreviousMonthDate.Year, startPreviousMonthDate.Month),
+                              23,
+                              59,
+                              59);
+        var latestRunActionCode = await _p2Client.GetLatest(instanceJobs.Select(ij => ij.JobId),
+                                                  null,
+                                                  null,
+                                                  dt,
+                                                  "RUN-SUC",
+                                                  token).ContinueWith<string?>(t =>
+                                                  {
+                                                      if (t.Status >= TaskStatus.Canceled)
+                                                          return null;
+                                                      if (t.Result == null)
+                                                          return null;
+
+                                                      return instanceJobs.FirstOrDefault(i => i.JobId == t.Result.JobId)?.ActionCode;
+                                                  });
+
+        var instanceJobAndRun = instanceJobs.Join(runs,
+                                                  ij => ij.JobId,
+                                                  r => r.JobId,
+                                                  (ij, r) => (instanceId: ij.InstId, actionCode: ij.ActionCode, runDate: DateTime.Parse(r.CompletedDate))).ToList();
+
+        if (latestRunActionCode == "ACT-OFF")
+            instanceJobAndRun.Insert(0, (instanceId, "ACT-OFF", startMonthDate));
+        else
+            instanceJobAndRun.Insert(0, (instanceId, "ACT-TON", startMonthDate));
+        instanceJobAndRun.Add((instanceId, "ACT-OFF", startMonthDate.AddMonths(1)));
+
+
+        DateTime? activePeriodFrom = null;
+        List<(int Day, TimeSpan RunningTime)> runningTimes = new List<(int Day, TimeSpan RunningTime)>();
+        foreach (var run in instanceJobAndRun)
+        {
+            if (run.actionCode == "ACT-TON")
+            {
+                if (activePeriodFrom != null)
+                    continue;
+                activePeriodFrom = run.runDate;
+            }
+            else
+            {
+                if (activePeriodFrom == null)
+                    continue;
+
+                var activePeriod = run.runDate.Subtract(activePeriodFrom.Value);
+                if (activePeriod.TotalMilliseconds <= 0)
+                    continue;
+
+                Debug.WriteLine($"{instanceId} : active period - {activePeriod.TotalHours}");
+
+                runningTimes.Add((activePeriodFrom.Value.Day, activePeriod));
+                activePeriodFrom = null;
+            }
+        }
+
+        //List<(int Day, double Cost)> dailyCosts = new List<(int Day, double Cost)>();
+        List<dynamic> dailyCosts = new List<dynamic>();
+        TimeSpan remainRunningTime = TimeSpan.Zero;
+        for (int i = 1; i <= DateTime.DaysInMonth(year, month); i++)
+        {
+            var runsByDay = runningTimes.Where(r => r.Day == i);
+            if (runsByDay.Count() <= 0 && remainRunningTime == TimeSpan.Zero)
+            {
+                dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = 0 });
+                continue;
+            }
+            
+            foreach (var runningTime in runsByDay)
+            {
+                remainRunningTime = remainRunningTime.Add(runningTime.RunningTime);
+            }
+
+            if (remainRunningTime != TimeSpan.Zero)
+            {
+                var comp = remainRunningTime.CompareTo(TimeSpan.FromHours(24));
+                if (comp >= 0)
+                {
+                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = TimeSpan.FromHours(24).TotalHours * price.Price_KRW });
+                    remainRunningTime = remainRunningTime.Subtract(TimeSpan.FromHours(24));
+                }
+                else
+                {
+                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = remainRunningTime.TotalHours * price.Price_KRW });
+                    remainRunningTime = TimeSpan.Zero;
+                }
+            }
+        }
+
+        return Ok(dailyCosts);
     }
 }
