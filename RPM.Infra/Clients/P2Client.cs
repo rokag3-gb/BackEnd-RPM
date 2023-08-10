@@ -15,6 +15,7 @@ public interface IP2Client
 {
     Task<long> RegisterJobYaml(
         long accountId,
+        string jobName,
         string workflowYaml,
         string note,
         string savedByUserId
@@ -46,6 +47,7 @@ public class P2Client : IP2Client
 
     public async Task<long> RegisterJobYaml(
         long accountId,
+        string jobName,
         string workflowYaml,
         string note,
         string savedByUserId
@@ -56,7 +58,7 @@ public class P2Client : IP2Client
         {
             AccountId = accountId,
             AppCode = "APP-RPM",
-            JobName = "RPM VM Power Switch DAG",
+            JobName = jobName,
             WorkflowContentYaml = workflowYaml,
             Note = note,
             IsEnable = true,

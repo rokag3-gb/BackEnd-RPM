@@ -103,6 +103,7 @@ public class RegisterInstanceJobCommandHandler
                     // YAML 로딩하여 VM 목록, Credential Dict 데이터 삽입
                     var newJobId = await _p2Client.RegisterJobYaml(
                         request.AccountId,
+                        request.JobName,
                         finalYaml,
                         request.Note,
                         request.SavedByUserId
