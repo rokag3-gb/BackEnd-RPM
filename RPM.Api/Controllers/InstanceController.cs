@@ -114,10 +114,13 @@ public class InstanceController : ControllerBase
             new RegisterInstanceJobCommand()
             {
                 AccountId = accountId,
+                ScheduleName = registerParams.ScheduleName,
                 InstanceIds = registerParams.InstIds,
                 ActionCode = registerParams.ActionCode,
                 Note = "",
                 SavedByUserId = userId ?? "",
+                ActivateDate = registerParams.ActivateDate,
+                ExpireDate = registerParams.ExpireDate,
                 CronExpressioon = registerParams.CronExpression
             }
         );

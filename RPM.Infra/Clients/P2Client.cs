@@ -22,6 +22,8 @@ public interface IP2Client
         long jobId,
         string scheduleName,
         string cronExpression,
+        DateTime activateDate,
+        DateTime expireDate,
         string note,
         string savedByUserId
     );
@@ -66,6 +68,8 @@ public class P2Client : IP2Client
         long jobId,
         string scheduleName,
         string cronExpression,
+        DateTime activateDate,
+        DateTime expireDate,
         string note,
         string savedByUserId
     )
@@ -79,8 +83,8 @@ public class P2Client : IP2Client
                 ScheduleName = scheduleName,
                 Cron = cronExpression,
                 IsEnable = true,
-                ActivateDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                ExpireDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss"),
+                ActivateDate = activateDate.ToString("o"),
+                ExpireDate = expireDate.ToString("o"),
                 Note = note,
                 SaveUserId = savedByUserId,
             }
