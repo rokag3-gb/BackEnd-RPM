@@ -111,8 +111,10 @@ public class RegisterInstanceJobCommandHandler
                     _p2Client.CreateScheduleForJob(
                         request.AccountId,
                         newJobId,
-                        "RPM VM Power Switch DAG Schedule",
+                        request.ScheduleName,
                         request.CronExpressioon,
+                        request.ActivateDate,
+                        request.ExpireDate,
                         request.Note,
                         request.SavedByUserId
                     );
