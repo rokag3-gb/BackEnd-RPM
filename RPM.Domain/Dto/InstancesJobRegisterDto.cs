@@ -6,6 +6,7 @@ public class InstancesJobRegisterDto
 {
     public IEnumerable<long> InstIds { get; set; }
     public string ScheduleName { get; set; }
+    public string JobName { get; set; }
     [RegularExpression(@"ACT-TON|ACT-OFF", 
          ErrorMessage = "ACT-TON, ACT-OFF 중 하나만 사용 가능합니다.")]
     public string ActionCode { get; set; }

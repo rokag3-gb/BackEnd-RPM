@@ -115,6 +115,7 @@ public class InstanceController : ControllerBase
             {
                 AccountId = accountId,
                 ScheduleName = registerParams.ScheduleName,
+                JobName = registerParams.JobName,
                 InstanceIds = registerParams.InstIds,
                 ActionCode = registerParams.ActionCode,
                 Note = "",
