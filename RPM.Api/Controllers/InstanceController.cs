@@ -286,7 +286,11 @@ public class InstanceController : ControllerBase
 
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/dailyCost")]
-    public async Task<ActionResult<IEnumerable<dynamic>>> DailyCost(long accountId, long instanceId, int year, int month)
+    [SwaggerOperation("대상 인스턴스의 한달 간 일별 사용 금액을 조회합니다.")]
+    public async Task<ActionResult<IEnumerable<dynamic>>> DailyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+                                                                    [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+                                                                    [SwaggerParameter("검색 년도", Required = true)] int year,
+                                                                    [SwaggerParameter("검색 월", Required = true)] int month)
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var startMonthDate = new DateTime(year, month, 1);
@@ -350,26 +354,37 @@ public class InstanceController : ControllerBase
         else
             instanceJobAndRun.Insert(0, (instanceId, "ACT-TON", startMonthDate));
         instanceJobAndRun.Add((instanceId, "ACT-OFF", startMonthDate.AddMonths(1)));
-
+        instanceJobAndRun = instanceJobAndRun.OrderBy(ijr => ijr.runDate).ToList();
 
         DateTime? activePeriodFrom = null;
         List<(int Day, TimeSpan RunningTime)> runningTimes = new List<(int Day, TimeSpan RunningTime)>();
-        foreach (var run in instanceJobAndRun)
+        for (int i = 0; i < instanceJobAndRun.Count(); i++)
         {
-            if (run.actionCode == "ACT-TON")
+            if (instanceJobAndRun[i].actionCode == "ACT-TON")
             {
                 if (activePeriodFrom != null)
                     continue;
-                activePeriodFrom = run.runDate;
+                activePeriodFrom = instanceJobAndRun[i].runDate;
             }
             else
             {
                 if (activePeriodFrom == null)
                     continue;
 
-                var activePeriod = run.runDate.Subtract(activePeriodFrom.Value);
+                TimeSpan activePeriod = TimeSpan.Zero;
+                if (activePeriodFrom.Value.Day != instanceJobAndRun[i].runDate.Day)
+                {
+                    activePeriod = activePeriodFrom.Value.AddDays(1).Date.Subtract(activePeriodFrom.Value);
+                    instanceJobAndRun.Insert(i + 1, (instanceId, "ACT-TON", activePeriodFrom.Value.AddDays(1).Date));
+                    instanceJobAndRun.Insert(i + 2, (instanceId, "ACT-OFF", instanceJobAndRun[i].runDate));
+                }
+                else
+                    activePeriod = instanceJobAndRun[i].runDate.Subtract(activePeriodFrom.Value);
                 if (activePeriod.TotalMilliseconds <= 0)
+                {
+                    activePeriodFrom = null;
                     continue;
+                }
 
                 Debug.WriteLine($"{instanceId} : active period - {activePeriod.TotalHours}");
 
@@ -378,7 +393,6 @@ public class InstanceController : ControllerBase
             }
         }
 
-        //List<(int Day, double Cost)> dailyCosts = new List<(int Day, double Cost)>();
         List<dynamic> dailyCosts = new List<dynamic>();
         TimeSpan remainRunningTime = TimeSpan.Zero;
         for (int i = 1; i <= DateTime.DaysInMonth(year, month); i++)
@@ -386,7 +400,11 @@ public class InstanceController : ControllerBase
             var runsByDay = runningTimes.Where(r => r.Day == i);
             if (runsByDay.Count() <= 0 && remainRunningTime == TimeSpan.Zero)
             {
+#if DEBUG
+                dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = 0, Hours = remainRunningTime });
+#else
                 dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = 0 });
+#endif
                 continue;
             }
             
@@ -400,12 +418,20 @@ public class InstanceController : ControllerBase
                 var comp = remainRunningTime.CompareTo(TimeSpan.FromHours(24));
                 if (comp >= 0)
                 {
+#if DEBUG
+                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = TimeSpan.FromHours(24).TotalHours * price.Price_KRW, Hours = remainRunningTime });
+#else
                     dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = TimeSpan.FromHours(24).TotalHours * price.Price_KRW });
+#endif
                     remainRunningTime = remainRunningTime.Subtract(TimeSpan.FromHours(24));
                 }
                 else
                 {
+#if DEBUG
+                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = remainRunningTime.TotalHours * price.Price_KRW, Hours = remainRunningTime });
+#else
                     dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = remainRunningTime.TotalHours * price.Price_KRW });
+#endif
                     remainRunningTime = TimeSpan.Zero;
                 }
             }
