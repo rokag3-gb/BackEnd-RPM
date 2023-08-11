@@ -29,8 +29,14 @@ public interface IP2Client
         string savedByUserId
     );
 
-    IEnumerable<JobScheduleData> GetSchedules(long jobId);
-    Task<IEnumerable<RunData>> GetRuns(IEnumerable<long> jobIds, DateTime from, DateTime to, IEnumerable<RunState> runStates, string token);
+    IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobId);
+    Task<IEnumerable<RunData>> GetRuns(
+        IEnumerable<long> jobIds,
+        DateTime from,
+        DateTime to,
+        IEnumerable<RunState> runStates,
+        string token
+    );
 }
 
 public class P2Client : IP2Client
@@ -94,11 +100,16 @@ public class P2Client : IP2Client
         var response = client.CreateSchedules(request);
     }
 
-    public IEnumerable<JobScheduleData> GetSchedules(long jobId)
+    public IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobIds)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
         var request = new ScheduleGetRequest() { JobId = jobId };
         var response = client.GetSchedulesByJob(request);
+
+
+        // var schedsReq = new ScheduleListRequest();
+        // schedsReq.JobIds.Add(jobId);
+        // client.GetSchedules(schedsReq);
         var list = response.Schedules.ToList();
         return list;
     }
@@ -106,7 +117,13 @@ public class P2Client : IP2Client
     /// <summary>
     /// P2의 Run 데이터를 조회합니다
     /// </summary>
-    public async Task<IEnumerable<RunData>> GetRuns(IEnumerable<long> jobIds, DateTime from, DateTime to, IEnumerable<RunState> runStates, string token)
+    public async Task<IEnumerable<RunData>> GetRuns(
+        IEnumerable<long> jobIds,
+        DateTime from,
+        DateTime to,
+        IEnumerable<RunState> runStates,
+        string token
+    )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
 

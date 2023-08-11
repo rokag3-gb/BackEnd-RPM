@@ -54,7 +54,6 @@ public class ScheduleController : ControllerBase
 
     [HttpPost]
     [Route("{accountId}/schedules")]
-    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없어 삭제할 수 없음")]
     public async Task<IEnumerable<JobScheduleData>> GetSchedules(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds
