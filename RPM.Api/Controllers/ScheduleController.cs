@@ -60,13 +60,8 @@ public class ScheduleController : ControllerBase
     )
     {
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
-        var result = new List<JobScheduleData>();
-        foreach (var instJob in instJobs){
-            var sched =  _p2Client.GetSchedules(
-                instJob.JobId
-            );
-            result.AddRange(sched);
-        }
-        return result;
+        var jobIds = instJobs.Select((x) => x.JobId).ToList();
+        var sched =  _p2Client.GetSchedules(jobIds);
+        return sched;
     }
 }

@@ -106,13 +106,9 @@ public class P2Client : IP2Client
     public IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobIds)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
-        var request = new ScheduleGetRequest() { JobId = jobId };
-        var response = client.GetSchedulesByJob(request);
-
-
-        // var schedsReq = new ScheduleListRequest();
-        // schedsReq.JobIds.Add(jobId);
-        // client.GetSchedules(schedsReq);
+        var schedsReq = new ScheduleListRequest();
+        schedsReq.JobIds.AddRange(jobIds);
+        var response = client.GetSchedules(schedsReq);
         var list = response.Schedules.ToList();
         return list;
     }
