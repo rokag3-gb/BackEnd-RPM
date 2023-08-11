@@ -6,6 +6,8 @@ using System.Collections;
 using P2.API.Services.Run;
 using Google.Cloud.Compute.V1;
 using Grpc.Core;
+using YamlDotNet.Core.Tokens;
+using Amazon.EC2.Model;
 
 namespace RPM.Infra.Clients;
 
@@ -37,6 +39,7 @@ public interface IP2Client
         IEnumerable<RunState> runStates,
         string token
     );
+    Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
 }
 
 public class P2Client : IP2Client
@@ -137,5 +140,26 @@ public class P2Client : IP2Client
         request.RunState.AddRange(runStates);
         var response = await client.GetListByJobAsync(request, headers);
         return response.Runs;
+    }
+
+    public async Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token)
+    {
+        var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
+        
+        var headers = new Grpc.Core.Metadata();
+        headers.Add("Authorization", $"Bearer {token}");
+
+        var request = new RunGetLatestRequest();
+
+        request.JobIds.AddRange(jobIds);
+        if (accountId != null)
+            request.AccountId = accountId.Value;
+        request.From = from?.ToString("o");
+        request.To = to?.ToString("o");
+        request.RunState = runState;
+
+        var response = await client.GetLatestAsync(request);
+
+        return response?.Run;
     }
 }
