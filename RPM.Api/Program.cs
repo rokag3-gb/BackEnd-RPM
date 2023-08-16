@@ -4,6 +4,7 @@ using RPM.Api.App.Queries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using RPM.Infra.Clients;
+using RPM.Api.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -83,6 +84,8 @@ builder.Services.AddHttpClient<SalesClient>(httpClient =>
     httpClient.BaseAddress = new Uri(configuration.GetConnectionString("IAMClientBaseUrl"));
 });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddScoped<InstanceCostCalculator>();
 
 var app = builder.Build();
 // app.UseCors();

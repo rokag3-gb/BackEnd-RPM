@@ -14,8 +14,7 @@ using MediatR;
 using RPM.Infra.Clients;
 using System.Text.Json;
 using Azure.Identity;
-using P2.API.Services.Commons;
-using System.Diagnostics;
+using RPM.Api.Model;
 
 namespace RPM.Api.Controllers;
 
@@ -30,10 +29,7 @@ public class InstanceController : ControllerBase
     private readonly IAMClient _iamClient;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
-    private readonly IInstanceJobQueries _instanceJobQueries;
-    private readonly IInstancePriceQueries _instancePriceQueries;
-    private readonly IInstanceSnapshotQueries _instanceSnapshotQueries;
-    private readonly IP2Client _p2Client;
+    private readonly InstanceCostCalculator _instanceCostCalculator;
 
     public InstanceController(
         ILogger<InstanceController> logger,
@@ -43,10 +39,7 @@ public class InstanceController : ControllerBase
         IAMClient iamClient,
         IMediator mediator,
         IMapper mapper,
-        IInstanceJobQueries instanceJobQueries,
-        IInstancePriceQueries instancePriceQueries,
-        IInstanceSnapshotQueries instanceSnapshotQueries,
-        IP2Client p2Client
+        InstanceCostCalculator instanceCostCalculator
     )
     {
         _logger = logger;
@@ -56,10 +49,7 @@ public class InstanceController : ControllerBase
         _iamClient = iamClient;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
-        _instanceJobQueries = instanceJobQueries;
-        _instancePriceQueries = instancePriceQueries;
-        _instanceSnapshotQueries = instanceSnapshotQueries;
-        _p2Client = p2Client;
+        _instanceCostCalculator = instanceCostCalculator;
     }
 
     // Api for querying list of Credentials
@@ -288,156 +278,40 @@ public class InstanceController : ControllerBase
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/dailyCost")]
     [SwaggerOperation("대상 인스턴스의 한달 간 일별 사용 금액을 조회합니다.")]
-    public async Task<ActionResult<IEnumerable<dynamic>>> DailyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+    public async IAsyncEnumerable<dynamic> DailyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
                                                                     [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
                                                                     [SwaggerParameter("검색 년도", Required = true)] int year,
                                                                     [SwaggerParameter("검색 월", Required = true)] int month)
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-        var startMonthDate = new DateTime(year, month, 1);
-        var startPreviousMonthDate = startMonthDate.AddMonths(-1);
-        var endMonthDate = startMonthDate.AddMonths(1);
-        var monthSpan = endMonthDate.Subtract(startMonthDate);
-
-        var snap = await _instanceSnapshotQueries.Get(accountId, instanceId, year, month);
-        if (snap == null)
+        await foreach(var cost in _instanceCostCalculator.DailyCost(accountId, instanceId, year, month, token))
         {
-            _logger.LogInformation($"해당 리소스(account id - {accountId}, inst id - {instanceId})에 대한 RPM 워크플로가 없음.");
-            return Ok(new List<dynamic>());
+            yield return cost;
+        }
+    }
+
+
+    [HttpGet]
+    [Route("{accountId}/instance/{instanceId}/monthlyCost")]
+    [SwaggerOperation("대상 년월로부터 최근 12개월 간 인스턴스의 월간 사용금액을 조회합니다.")]
+    public async IAsyncEnumerable<InstanceCostDto> MonthlyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+                                                               [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+                                                               [SwaggerParameter("검색 년도", Required = true)] int year,
+                                                               [SwaggerParameter("검색 월", Required = true)] int month)
+    {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+        var dateList = new List<DateTime>();
+        var to = new DateTime(year, month, 1);
+
+        for (int i = 11; i >= 0; i--)
+        {
+            dateList.Add(to.AddMonths(-i));
         }
 
-        var price = await _instancePriceQueries.Get(new[] { instanceId }).ContinueWith(t => t.Result.FirstOrDefault());
-        if (price == null)
+        await foreach (var instanceCost in _instanceCostCalculator.InstanceCostPerMonth(accountId, new[] { instanceId }, dateList, token))
         {
-            _logger.LogError($"가격 정보를 찾을 수 없습니다. (account id - {accountId}, inst id - {instanceId})");
-            return StatusCode(500);
+            yield return instanceCost.First();
         }
-
-        var instanceJobs = await _instanceJobQueries.GetInstanceJobsAsync(accountId, new[] { instanceId });
-        if (instanceJobs == null)
-            return Ok(); //todo. cost max
-
-        //var instance = _instanceQueries.GetInstanceById(accountId, instanceId);
-        var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
-                                           startMonthDate,
-                                           new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
-                                           new[] { RunState.Success },
-                                           token);
-
-        var dt = new DateTime(startPreviousMonthDate.Year,
-                              startPreviousMonthDate.Month,
-                              DateTime.DaysInMonth(startPreviousMonthDate.Year, startPreviousMonthDate.Month),
-                              23,
-                              59,
-                              59);
-        var latestRunActionCode = await _p2Client.GetLatest(instanceJobs.Select(ij => ij.JobId),
-                                                  null,
-                                                  null,
-                                                  dt,
-                                                  "RUN-SUC",
-                                                  token).ContinueWith<string?>(t =>
-                                                  {
-                                                      if (t.Status >= TaskStatus.Canceled)
-                                                          return null;
-                                                      if (t.Result == null)
-                                                          return null;
-
-                                                      return instanceJobs.FirstOrDefault(i => i.JobId == t.Result.JobId)?.ActionCode;
-                                                  });
-
-        var instanceJobAndRun = instanceJobs.Join(runs,
-                                                  ij => ij.JobId,
-                                                  r => r.JobId,
-                                                  (ij, r) => (instanceId: ij.InstId, actionCode: ij.ActionCode, runDate: DateTime.Parse(r.CompletedDate))).ToList();
-
-        if (latestRunActionCode == "ACT-OFF")
-            instanceJobAndRun.Insert(0, (instanceId, "ACT-OFF", startMonthDate));
-        else
-            instanceJobAndRun.Insert(0, (instanceId, "ACT-TON", startMonthDate));
-        instanceJobAndRun.Add((instanceId, "ACT-OFF", startMonthDate.AddMonths(1)));
-        instanceJobAndRun = instanceJobAndRun.OrderBy(ijr => ijr.runDate).ToList();
-
-        DateTime? activePeriodFrom = null;
-        List<(int Day, TimeSpan RunningTime)> runningTimes = new List<(int Day, TimeSpan RunningTime)>();
-        for (int i = 0; i < instanceJobAndRun.Count(); i++)
-        {
-            if (instanceJobAndRun[i].actionCode == "ACT-TON")
-            {
-                if (activePeriodFrom != null)
-                    continue;
-                activePeriodFrom = instanceJobAndRun[i].runDate;
-            }
-            else
-            {
-                if (activePeriodFrom == null)
-                    continue;
-
-                TimeSpan activePeriod = TimeSpan.Zero;
-                if (activePeriodFrom.Value.Day != instanceJobAndRun[i].runDate.Day)
-                {
-                    activePeriod = activePeriodFrom.Value.AddDays(1).Date.Subtract(activePeriodFrom.Value);
-                    instanceJobAndRun.Insert(i + 1, (instanceId, "ACT-TON", activePeriodFrom.Value.AddDays(1).Date));
-                    instanceJobAndRun.Insert(i + 2, (instanceId, "ACT-OFF", instanceJobAndRun[i].runDate));
-                }
-                else
-                    activePeriod = instanceJobAndRun[i].runDate.Subtract(activePeriodFrom.Value);
-                if (activePeriod.TotalMilliseconds <= 0)
-                {
-                    activePeriodFrom = null;
-                    continue;
-                }
-
-                Debug.WriteLine($"{instanceId} : active period - {activePeriod.TotalHours}");
-
-                runningTimes.Add((activePeriodFrom.Value.Day, activePeriod));
-                activePeriodFrom = null;
-            }
-        }
-
-        List<dynamic> dailyCosts = new List<dynamic>();
-        TimeSpan remainRunningTime = TimeSpan.Zero;
-        for (int i = 1; i <= DateTime.DaysInMonth(year, month); i++)
-        {
-            var runsByDay = runningTimes.Where(r => r.Day == i);
-            if (runsByDay.Count() <= 0 && remainRunningTime == TimeSpan.Zero)
-            {
-#if DEBUG
-                dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = 0, Hours = remainRunningTime });
-#else
-                dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = 0 });
-#endif
-                continue;
-            }
-            
-            foreach (var runningTime in runsByDay)
-            {
-                remainRunningTime = remainRunningTime.Add(runningTime.RunningTime);
-            }
-
-            if (remainRunningTime != TimeSpan.Zero)
-            {
-                var comp = remainRunningTime.CompareTo(TimeSpan.FromHours(24));
-                if (comp >= 0)
-                {
-#if DEBUG
-                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = TimeSpan.FromHours(24).TotalHours * price.Price_KRW, Hours = remainRunningTime });
-#else
-                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = TimeSpan.FromHours(24).TotalHours * price.Price_KRW });
-#endif
-                    remainRunningTime = remainRunningTime.Subtract(TimeSpan.FromHours(24));
-                }
-                else
-                {
-#if DEBUG
-                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = remainRunningTime.TotalHours * price.Price_KRW, Hours = remainRunningTime });
-#else
-                    dailyCosts.Add(new { Day = $"{year}-{month}-{i}", Cost_krw = remainRunningTime.TotalHours * price.Price_KRW });
-#endif
-                    remainRunningTime = TimeSpan.Zero;
-                }
-            }
-        }
-
-        return Ok(dailyCosts);
     }
 }
