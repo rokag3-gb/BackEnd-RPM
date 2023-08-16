@@ -7,6 +7,7 @@ using RPM.Domain.P2Models;
 using RPM.Domain.Dto;
 using System.Text.Json;
 using RPM.Infra.Data.Repositories;
+using System.Reflection;
 
 namespace RPM.Api.App.Commands;
 
@@ -69,7 +70,7 @@ public class RegisterInstanceJobCommandHandler
             x => new { CredData = x.CredData }
         );
 
-        var yamlWorkflowFilePath = _config.GetConnectionString("YamlWorkflowFilePath");
+        var yamlWorkflowFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"Resources\rpm.yaml");
         if (string.IsNullOrEmpty(yamlWorkflowFilePath))
         {
             return null;
