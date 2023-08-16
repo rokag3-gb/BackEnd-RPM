@@ -22,12 +22,15 @@ RUN dotnet publish -c Release -o /app --self-contained false
 # final stage/image
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-
+ENV ConnectionStrings__YamlWorkflowFilePath="/home/app/rpm.yaml"
+USER root
 
 COPY --from=build /rootfs /
 WORKDIR /app
 COPY --from=build /app .
-COPY --from=build /source/rpm.yaml .
+
+USER app
+COPY rpm.yaml /home/app/
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "RPM.Api.dll"]
