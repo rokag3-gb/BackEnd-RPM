@@ -14,6 +14,7 @@ public class InstanceDto
     public string Tags { get; set; }
     public string Info { get; set; }
     public string Note { get; set; }
+    public DateTime SavedAt { get; set; }
     public string SaverId { get; set; }
     public string SaverName { get; set;}
 }

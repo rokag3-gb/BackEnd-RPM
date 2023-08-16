@@ -30,6 +30,7 @@ public class InstanceController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
     private readonly InstanceCostCalculator _instanceCostCalculator;
+    private readonly SalesClient _salesClient;
 
     public InstanceController(
         ILogger<InstanceController> logger,
@@ -39,7 +40,8 @@ public class InstanceController : ControllerBase
         IAMClient iamClient,
         IMediator mediator,
         IMapper mapper,
-        InstanceCostCalculator instanceCostCalculator
+        InstanceCostCalculator instanceCostCalculator,
+        SalesClient salesClient
     )
     {
         _logger = logger;
@@ -50,12 +52,13 @@ public class InstanceController : ControllerBase
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
         _instanceCostCalculator = instanceCostCalculator;
+        _salesClient = salesClient;
     }
 
     // Api for querying list of Credentials
     [HttpGet]
     [Route("{accountId}/instances")]
-    public async Task<IEnumerable<InstanceDto>> GetList(
+    public async Task<IEnumerable<dynamic>> GetList(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("클라우드 벤더 코드(VEN-XXX 형식)", Required = false)] string? vendor,
         [SwaggerParameter("리소스 ID", Required = false)] string? resourceId,
@@ -76,11 +79,45 @@ public class InstanceController : ControllerBase
         var saverIdsSet = instances.Select(x => x.SaverId).ToHashSet();
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var userList = await _iamClient.ResolveUserList(token, saverIdsSet);
-        if (userList == null)
-        {
-            userList = new List<UserListItem>();
-        }
 
+        if (userList == null)
+            userList = new List<UserListItem>();
+
+        var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
+
+        if (venderList == null)
+            venderList = new List<Code>();
+
+        // instances와 venderList를 조인
+        var joinedInstances = instances
+            .Join(venderList, i => i.Vendor?.ToString(), c => c.CodeKey?.ToString(), (i, c) => new { i, c })
+            ;
+
+        var result =
+            from i in joinedInstances
+            join userRaw in userList on i.i.SaverId equals userRaw.Id into joinedUsers
+            from user in joinedUsers.DefaultIfEmpty()
+            select new
+            {
+                InstId = i.i.InstId,
+                AccountId = i.i.AccountId,
+                CredId = i.i.CredId,
+                Vendor = i.i.Vendor,
+                VendorName = i.c?.Name ?? "",
+                ResourceId = i.i.ResourceId,
+                IsEnable = i.i.IsEnable,
+                Name = i.i.Name,
+                Region = i.i.Region,
+                Type = i.i.Type,
+                Tags = i.i.Tags,
+                Info = i.i.Info,
+                Note = i.i.Note,
+                SavedAt = i.i.SavedAt,
+                SaverId = i.i.SaverId,
+                SaverName = user?.Username ?? ""
+            };
+
+        /*
         var result =
             from instance in instances
             join userRaw in userList on instance.SaverId equals userRaw.Id into joinedUsers
@@ -99,9 +136,11 @@ public class InstanceController : ControllerBase
                 Tags = instance.Tags,
                 Info = instance.Info,
                 Note = instance.Note,
+                SavedAt = instance.SavedAt,
                 SaverId = instance.SaverId,
                 SaverName = user?.Username ?? ""
             };
+        */
         return result;
     }
 
@@ -165,6 +204,7 @@ public class InstanceController : ControllerBase
             Tags = instance.Tags,
             Info = instance.Info,
             Note = instance.Note,
+            SavedAt = instance.SavedAt,
             SaverId = instance.SaverId,
             SaverName = user?.Username ?? ""
         };
