@@ -10,7 +10,7 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
 COPY --from=chisel /opt/chisel/chisel /usr/bin/
 RUN mkdir /rootfs \
     && chisel cut --release "ubuntu-22.04" --root /rootfs \
-        libicu70_libs
+        libicu70_libs libssl3_libs
 
 WORKDIR /source
 
@@ -27,6 +27,7 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 COPY --from=build /rootfs /
 WORKDIR /app
 COPY --from=build /app .
+COPY --from=build /source/rpm.yaml .
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "RPM.Api.dll"]
