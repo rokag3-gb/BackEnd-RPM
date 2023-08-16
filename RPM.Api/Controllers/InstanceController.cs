@@ -98,62 +98,39 @@ public class InstanceController : ControllerBase
 
         var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
 
-        //if (venderList == null)
-        //    venderList = new List<Code>();
+        if (venderList == null)
+            venderList = new List<Code>();
 
-        // instances와 users를 조인합니다.
-        //var joinedInstances = instances
-        //    .Join(venderList, i => i.Vendor?.ToString(), c => c.CodeKey?.ToString(), (i, c) => new { i, c })
-        //    //.Join(userList, i => i.SaverId?.ToString(), u => u.Id?.ToString(), (i, u) => new { i, u })
-        //    ;
-        /*
+        // instances와 venderList를 조인
+        var joinedInstances = instances
+            .Join(venderList, i => i.Vendor?.ToString(), c => c.CodeKey?.ToString(), (i, c) => new { i, c })
+            ;
+
         var result =
             from i in joinedInstances
+            join userRaw in userList on i.i.SaverId equals userRaw.Id into joinedUsers
+            from user in joinedUsers.DefaultIfEmpty()
             select new
             {
-                InstId = i.i.i.InstId,
-                AccountId = i.i.i.AccountId,
-                CredId = i.i.i.CredId,
-                Vendor = i.i.i.Vendor,
+                InstId = i.i.InstId,
+                AccountId = i.i.AccountId,
+                CredId = i.i.CredId,
+                Vendor = i.i.Vendor,
                 VendorName = i.c?.Name ?? "",
-                ResourceId = i.i.i.ResourceId,
-                IsEnable = i.i.i.IsEnable,
-                Name = i.i.i.Name,
-                Region = i.i.i.Region,
-                Type = i.i.i.Type,
-                Tags = i.i.i.Tags,
-                Info = i.i.i.Info,
-                Note = i.i.i.Note,
-                SavedAt = i.i.i.SavedAt,
-                SaverId = i.i.i.SaverId,
-                SaverName = i.i.u?.Username ?? ""
+                ResourceId = i.i.ResourceId,
+                IsEnable = i.i.IsEnable,
+                Name = i.i.Name,
+                Region = i.i.Region,
+                Type = i.i.Type,
+                Tags = i.i.Tags,
+                Info = i.i.Info,
+                Note = i.i.Note,
+                SavedAt = i.i.SavedAt,
+                SaverId = i.i.SaverId,
+                SaverName = user?.Username ?? ""
             };
-        */
 
-        //var result =
-        //    from i in instances
-        //    join userRaw in userList on i.i.SaverId equals userRaw.Id into joinedUsers
-        //    from user in joinedUsers.DefaultIfEmpty()
-        //    select new
-        //    {
-        //        InstId = i.i.InstId,
-        //        AccountId = i.i.AccountId,
-        //        CredId = i.i.CredId,
-        //        Vendor = i.i.Vendor,
-        //        VendorName = i.c?.Name ?? "",
-        //        ResourceId = i.i.ResourceId,
-        //        IsEnable = i.i.IsEnable,
-        //        Name = i.i.Name,
-        //        Region = i.i.Region,
-        //        Type = i.i.Type,
-        //        Tags = i.i.Tags,
-        //        Info = i.i.Info,
-        //        Note = i.i.Note,
-        //        SavedAt = i.i.SavedAt,
-        //        SaverId = i.i.SaverId,
-        //        SaverName = user?.Username ?? ""
-        //    };
-        
+        /*
         var result =
             from instance in instances
             join userRaw in userList on instance.SaverId equals userRaw.Id into joinedUsers
@@ -176,7 +153,7 @@ public class InstanceController : ControllerBase
                 SaverId = instance.SaverId,
                 SaverName = user?.Username ?? ""
             };
-        
+        */
         return result;
     }
 
