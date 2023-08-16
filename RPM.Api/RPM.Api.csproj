@@ -27,6 +27,7 @@
     <PackageReference Include="YamlDotNet" Version="13.1.1" />
     <ProjectReference Include="..\RPM.Domain\RPM.Domain.csproj" />
     <ProjectReference Include="..\RPM.Infra\RPM.Infra.csproj" />
+    <None Update="Resources\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
