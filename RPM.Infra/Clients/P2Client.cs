@@ -11,6 +11,7 @@ using Amazon.EC2.Model;
 using Amazon.EC2;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
+using Google.Protobuf.Collections;
 
 namespace RPM.Infra.Clients;
 
@@ -47,7 +48,7 @@ public interface IP2Client
 
     Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
 
-    Task<RunListResponse?> GetRunListByJob(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token);
+    Task<List<RunData>> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token);
 }
 
 public class P2Client : IP2Client
@@ -167,7 +168,7 @@ public class P2Client : IP2Client
         return response?.Run;
     }
 
-    public async Task<RunListResponse> GetRunListByJob(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token)
+    public async Task<List<RunData>> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token)
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
 
@@ -183,12 +184,26 @@ public class P2Client : IP2Client
 
         request.PeriodFrom = from?.ToString("o");
         request.PeriodTo = to?.ToString("o");
-        //request.RunState = RunState.Success;
-        //request.Offset = 0;
-        //request.Limit = 1000;
+        request.RunState.AddRange(new [] {
+            RunState.Running
+            , RunState.Queued
+            , RunState.Success
+            , RunState.Canceled
+            , RunState.Failed
+            , RunState.Unspecified
+            , RunState.Disabled
+        });
+        request.Offset = 0;
+        request.Limit = 1000;
 
         var response = await client.GetListByJobAsync(request, headers);
-        
-        return response;
+
+        List<RunData> runDataList = new List<RunData>(response.Runs.Count);
+        for (int i = 0; i < response.Runs.Count; i++)
+        {
+            runDataList.Add(response.Runs[i]);
+        }
+
+        return runDataList;
     }
 }

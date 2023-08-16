@@ -17,6 +17,7 @@ using Azure.Identity;
 using RPM.Api.Model;
 using P2.API.Services.Run;
 using Microsoft.IdentityModel.Tokens;
+using P2.API.Services.Commons;
 
 namespace RPM.Api.Controllers;
 
@@ -66,7 +67,7 @@ public class HistoryController : ControllerBase
     [HttpGet]
     [Route("{accountId}/history")]
     [SwaggerOperation("특정 Instance_Job에 해당하는 P2 History를 조회합니다.")]
-    public async IAsyncEnumerable<dynamic> GetHistory(
+    public async Task<dynamic> GetHistory(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("대상 인스턴스 ID(s)", Required = false), FromQuery] List<long>? instanceIds,
         [SwaggerParameter("검색시작일시", Required = false), FromQuery] DateTime? periodFrom,
@@ -84,11 +85,12 @@ public class HistoryController : ControllerBase
 
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
+        // Instance Ids 로 JobIds 구해오기
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
 
-        var runs = _p2Client.GetRunListByJob(jobIds, accountId, periodFrom, periodTo, token);
+        var runs = _p2Client.GetRunListByJobIds(jobIds, accountId, periodFrom, periodTo, token);
 
-        yield return runs;
+        return runs;
     }
 }
