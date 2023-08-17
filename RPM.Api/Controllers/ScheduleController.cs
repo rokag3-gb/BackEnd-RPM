@@ -50,8 +50,6 @@ public class ScheduleController : ControllerBase
         _mapper = mapper;
     }
 
-   
-
     [HttpGet]
     [Route("{accountId}/schedules")]
     public async Task<IEnumerable<ScheduleDto>> GetSchedules(
@@ -61,49 +59,60 @@ public class ScheduleController : ControllerBase
     {
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
-        var sched =  _p2Client.GetSchedules(jobIds);
-        var joined = from i in instJobs join s in sched on i.JobId equals s.JobId select new ScheduleDto(){ 
-            InstId = i.InstId,
-            SchId = s.SchId,
-            AccountId = s.AccountId,
-            JobId = s.JobId,
-            Cron = s.Cron,
-            IsEnable = s.IsEnable,
-            ActivateDate = s.ActivateDate,
-            ExpireDate = s.ExpireDate,
-            Note = s.Note,
-            SaveDate = s.SaveDate,
-            SaveUserId = s.SaveUserId,
-            ScheduleName = s.ScheduleName
-         };
+        var instances = _instanceQueries.GetInstancesByIds(accountId, instanceIds);
+        var sched = _p2Client.GetSchedules(jobIds);
+        var joined =
+            from ij in instJobs
+            join s in sched on ij.JobId equals s.JobId
+            join i in instances on ij.InstId equals i.InstId
+            select new ScheduleDto()
+            {
+                InstId = ij.InstId,
+                Instance = i,
+                SchId = s.SchId,
+                AccountId = s.AccountId,
+                JobId = s.JobId,
+                Cron = s.Cron,
+                IsEnable = s.IsEnable,
+                ActivateDate = s.ActivateDate,
+                ExpireDate = s.ExpireDate,
+                Note = s.Note,
+                SaveDate = s.SaveDate,
+                SaveUserId = s.SaveUserId,
+                ScheduleName = s.ScheduleName
+            };
         return joined;
     }
 
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/dailyScheduleSummary")]
     [SwaggerOperation("대상 인스턴스의 일별 스케줄 정보를 요약합니다")]
-    public async IAsyncEnumerable<dynamic?> DailyScheduleSummary([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-                                                                [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
-                                                                [SwaggerParameter("검색 년도", Required = true)] int year,
-                                                                [SwaggerParameter("검색 월", Required = true)] int month)
+    public async IAsyncEnumerable<dynamic?> DailyScheduleSummary(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+        [SwaggerParameter("검색 년도", Required = true)] int year,
+        [SwaggerParameter("검색 월", Required = true)] int month
+    )
     {
         var snap = await _instanceSnapshotQueries.Get(accountId, instanceId, year, month);
         if (snap == null)
             yield break;
 
-        var jobIds = await _instanceJobQueries.GetInstanceJobsAsync(accountId, new[] { instanceId })
+        var jobIds = await _instanceJobQueries
+            .GetInstanceJobsAsync(accountId, new[] { instanceId })
             .ContinueWith(t => t.Result.Select(ij => ij.JobId));
         if (jobIds == null || jobIds.Count() <= 0)
             yield break;
 
         DateTime from = new DateTime(year, month, 1);
         DateTime to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
-        var schedules = _p2Client.GetSchedules(jobIds)
-                                 .Where(s =>
-                                 {
-                                     var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);
-                                     return isValid && activateDate < to;
-                                 });
+        var schedules = _p2Client
+            .GetSchedules(jobIds)
+            .Where(s =>
+            {
+                var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);
+                return isValid && activateDate < to;
+            });
         if (schedules == null || schedules.Count() <= 0)
             yield break;
 
@@ -133,16 +142,22 @@ public class ScheduleController : ControllerBase
                 {
                     cron = CronExpressionConverter.ConvertToQuartzCronFormat(schedule.Cron);
                 }
-                catch { continue; }
+                catch
+                {
+                    continue;
+                }
 
                 var cronExpression = new Quartz.CronExpression(cron);
 
-                var fromDate = new DateTime(year, month, i, 0, 0, 0) < DateTime.Parse(schedule.ActivateDate) 
-                    ? DateTime.Parse(schedule.ActivateDate) 
-                    : new DateTime(year, month, i, 0, 0, 0);
-                var toDate = DateTime.TryParse(schedule.ExpireDate, out DateTime exDate) && new DateTime(year, month, i, 23, 59, 59) > exDate
-                    ? exDate
-                    : new DateTime(year, month, i, 23, 59, 59);
+                var fromDate =
+                    new DateTime(year, month, i, 0, 0, 0) < DateTime.Parse(schedule.ActivateDate)
+                        ? DateTime.Parse(schedule.ActivateDate)
+                        : new DateTime(year, month, i, 0, 0, 0);
+                var toDate =
+                    DateTime.TryParse(schedule.ExpireDate, out DateTime exDate)
+                    && new DateTime(year, month, i, 23, 59, 59) > exDate
+                        ? exDate
+                        : new DateTime(year, month, i, 23, 59, 59);
 
                 var occurrences = GetOccurrences(fromDate, toDate, cronExpression);
 
@@ -171,7 +186,11 @@ public class ScheduleController : ControllerBase
         }
     }
 
-    private IEnumerable<DateTimeOffset> GetOccurrences(DateTime from, DateTime to, Quartz.CronExpression cronExpression)
+    private IEnumerable<DateTimeOffset> GetOccurrences(
+        DateTime from,
+        DateTime to,
+        Quartz.CronExpression cronExpression
+    )
     {
         if (from > to)
             yield break;
