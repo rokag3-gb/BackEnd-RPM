@@ -70,7 +70,7 @@ public class RegisterInstanceJobCommandHandler
             x => new { CredData = x.CredData }
         );
 
-        var yamlWorkflowFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"Resources\rpm.yaml");
+        var yamlWorkflowFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"Resources/rpm.yaml");
         if (string.IsNullOrEmpty(yamlWorkflowFilePath))
         {
             return null;
