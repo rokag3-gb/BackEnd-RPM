@@ -10,7 +10,7 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
 COPY --from=chisel /opt/chisel/chisel /usr/bin/
 RUN mkdir /rootfs \
     && chisel cut --release "ubuntu-22.04" --root /rootfs \
-        libicu70_libs libssl3_libs
+        libicu70_libs libssl3_libs tzdata
 
 WORKDIR /source
 
@@ -22,6 +22,7 @@ RUN dotnet publish -c Release -o /app --self-contained false
 # final stage/image
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV TZ=Asia/Seoul
 USER root
 
 COPY --from=build /rootfs /

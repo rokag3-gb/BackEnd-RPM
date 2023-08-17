@@ -8,6 +8,10 @@ using Google.Cloud.Compute.V1;
 using Grpc.Core;
 using YamlDotNet.Core.Tokens;
 using Amazon.EC2.Model;
+using Amazon.EC2;
+using System.CodeDom.Compiler;
+using System.Diagnostics;
+using Google.Protobuf.Collections;
 
 namespace RPM.Infra.Clients;
 
@@ -20,6 +24,7 @@ public interface IP2Client
         string note,
         string savedByUserId
     );
+
     void CreateScheduleForJob(
         long accountId,
         long jobId,
@@ -32,6 +37,7 @@ public interface IP2Client
     );
 
     IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobId);
+
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
         DateTime from,
@@ -39,7 +45,10 @@ public interface IP2Client
         IEnumerable<RunState> runStates,
         string token
     );
+
     Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
+
+    Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token);
 }
 
 public class P2Client : IP2Client
@@ -157,5 +166,47 @@ public class P2Client : IP2Client
         var response = await client.GetLatestAsync(request);
 
         return response?.Run;
+    }
+
+    public async Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token)
+    {
+        var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
+
+        var headers = new Grpc.Core.Metadata();
+        headers.Add("Authorization", $"Bearer {token}");
+
+        var request = new RunGetByJobRequest();
+
+        request.JobIds.AddRange(jobIds);
+
+        if (accountId != null)
+            request.AccountId = accountId.Value;
+
+        request.PeriodFrom = from?.ToString("o");
+        request.PeriodTo = to?.ToString("o");
+        request.RunState.AddRange(new [] {
+            RunState.Running
+            , RunState.Queued
+            , RunState.Success
+            , RunState.Canceled
+            , RunState.Failed
+            , RunState.Unspecified
+            , RunState.Disabled
+        });
+
+        if (offset is not null)
+            request.Offset = offset.Value;
+        if (limit is not null)
+            request.Limit = limit.Value;
+
+        var response = await client.GetListByJobAsync(request, headers);
+
+        //List<RunData> runDataList = new List<RunData>(response.Runs.Count);
+        //for (int i = 0; i < response.Runs.Count; i++)
+        //{
+        //    runDataList.Add(response.Runs[i]);
+        //}
+
+        return response;
     }
 }
