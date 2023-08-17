@@ -120,18 +120,18 @@ namespace RPM.Api.Model
                 {
                     if (cost.Runs.Any() == true)
                     {
-                        if (cost.LastRecordOfPreviousMonth != null && cost.LastRecordOfPreviousMonth.Value.actionCode == "ACT-TON")
-                            cost.Runs.Insert(0, (cost.Instance.InstId, "ACT-TON", new DateTime(dt.Year, dt.Month, 1)));
+                        if (cost.LastRecordOfPreviousMonth != null && cost.LastRecordOfPreviousMonth.Value.actionCode == "ACC-TON")
+                            cost.Runs.Insert(0, (cost.Instance.InstId, "ACC-TON", new DateTime(dt.Year, dt.Month, 1)));
 
-                        if (cost.Runs.Last().actionCode == "ACT-TON")
-                            cost.Runs.Add((cost.Instance.InstId, "ACT-OFF", endMonthDate));
+                        if (cost.Runs.Last().actionCode == "ACC-TON")
+                            cost.Runs.Add((cost.Instance.InstId, "ACC-OFF", endMonthDate));
                     }
 
                     DateTime? activePeriodFrom = null;
                     TimeSpan? totalActivePeriod = null;
                     foreach (var run in cost.Runs)
                     {
-                        if (run.actionCode == "ACT-TON")
+                        if (run.actionCode == "ACC-TON")
                         {
                             if (activePeriodFrom != null)
                                 continue;
@@ -241,18 +241,18 @@ namespace RPM.Api.Model
                                                       r => r.JobId,
                                                       (ij, r) => (instanceId: ij.InstId, actionCode: ij.ActionCode, runDate: DateTime.Parse(r.CompletedDate))).ToList();
 
-            if (latestRunActionCode == "ACT-OFF")
-                instanceJobAndRun.Insert(0, (instanceId, "ACT-OFF", startMonthDate));
+            if (latestRunActionCode == "ACC-OFF")
+                instanceJobAndRun.Insert(0, (instanceId, "ACC-OFF", startMonthDate));
             else
-                instanceJobAndRun.Insert(0, (instanceId, "ACT-TON", startMonthDate));
-            instanceJobAndRun.Add((instanceId, "ACT-OFF", startMonthDate.AddMonths(1)));
+                instanceJobAndRun.Insert(0, (instanceId, "ACC-TON", startMonthDate));
+            instanceJobAndRun.Add((instanceId, "ACC-OFF", startMonthDate.AddMonths(1)));
             instanceJobAndRun = instanceJobAndRun.OrderBy(ijr => ijr.runDate).ToList();
 
             DateTime? activePeriodFrom = null;
             List<(int Day, TimeSpan RunningTime)> runningTimes = new List<(int Day, TimeSpan RunningTime)>();
             for (int i = 0; i < instanceJobAndRun.Count(); i++)
             {
-                if (instanceJobAndRun[i].actionCode == "ACT-TON")
+                if (instanceJobAndRun[i].actionCode == "ACC-TON")
                 {
                     if (activePeriodFrom != null)
                         continue;
@@ -267,8 +267,8 @@ namespace RPM.Api.Model
                     if (activePeriodFrom.Value.Day != instanceJobAndRun[i].runDate.Day)
                     {
                         activePeriod = activePeriodFrom.Value.AddDays(1).Date.Subtract(activePeriodFrom.Value);
-                        instanceJobAndRun.Insert(i + 1, (instanceId, "ACT-TON", activePeriodFrom.Value.AddDays(1).Date));
-                        instanceJobAndRun.Insert(i + 2, (instanceId, "ACT-OFF", instanceJobAndRun[i].runDate));
+                        instanceJobAndRun.Insert(i + 1, (instanceId, "ACC-TON", activePeriodFrom.Value.AddDays(1).Date));
+                        instanceJobAndRun.Insert(i + 2, (instanceId, "ACC-OFF", instanceJobAndRun[i].runDate));
                     }
                     else
                         activePeriod = instanceJobAndRun[i].runDate.Subtract(activePeriodFrom.Value);
