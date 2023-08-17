@@ -127,9 +127,8 @@ public class RegisterInstanceJobCommandHandler
                             {
                                 InstId = instance.InstId,
                                 JobId = newJobId,
-                                ActionCode = request.ActionCode,
-                                SavedAt = DateTime.Now
-                            }
+                                ActionCode = request.ActionCode
+                                }
                         );
                         instJobIds.Add(instJob.SNo);
                     }

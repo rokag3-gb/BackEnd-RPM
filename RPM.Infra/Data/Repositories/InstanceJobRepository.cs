@@ -19,11 +19,11 @@ public class InstanceJobRepository : IInstanceJobRepository
         using (var conn = _rpmDbConn.CreateConnection())
         {
             var fields =
-                "InstId, JobId, ActionCode, SavedAt";
+                "InstId, JobId, ActionCode";
             var queryTemplate =
                 @$"insert into Instance_Job ({fields})
             output inserted.SNo, inserted.InstId, inserted.JobId, inserted.ActionCode, inserted.SavedAt
-            values (@InstId, @JobId, @ActionCode, @SavedAt)";
+            values (@InstId, @JobId, @ActionCode)";
 
             conn.Open();
             var result = conn.QuerySingle<InstanceJob>(queryTemplate, instance);
