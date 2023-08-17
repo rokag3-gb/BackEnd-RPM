@@ -1,18 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using RPM.Infra.Data.Repositories;
 using RPM.Api.App.Queries;
-using RPM.Domain.Dto;
-using RPM.Api.App.Commands;
-using RPM.Domain.Models;
 using Swashbuckle.AspNetCore.Annotations;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Net.Mime;
-using System.Security.Claims;
 using AutoMapper;
 using MediatR;
 using RPM.Infra.Clients;
 using P2.API.Services.Commons;
+using RPM.Api.Model;
+using Quartz;
+using Google.Api.Gax;
 
 namespace RPM.Api.Controllers;
 
@@ -28,12 +24,14 @@ public class ScheduleController : ControllerBase
     private readonly IP2Client _p2Client;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
+    private readonly IInstanceSnapshotQueries _instanceSnapshotQueries;
 
     public ScheduleController(
         ILogger<ScheduleController> logger,
         IInstanceQueries instanceQueries,
         IInstanceRepository instanceRepository,
         IInstanceJobQueries instanceJobQueries,
+        IInstanceSnapshotQueries instanceSnapshotQueries,
         IAMClient iamClient,
         IP2Client p2Client,
         IMediator mediator,
@@ -44,6 +42,7 @@ public class ScheduleController : ControllerBase
         _instanceQueries = instanceQueries;
         _instanceRepository = instanceRepository;
         _instanceJobQueries = instanceJobQueries;
+        _instanceSnapshotQueries = instanceSnapshotQueries;
         _iamClient = iamClient;
         _p2Client = p2Client;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
@@ -77,5 +76,114 @@ public class ScheduleController : ControllerBase
             ScheduleName = s.ScheduleName
          };
         return joined;
+    }
+
+    [HttpGet]
+    [Route("{accountId}/instance/{instanceId}/dailyScheduleSummary")]
+    [SwaggerOperation("대상 인스턴스의 일별 스케줄 정보를 요약합니다")]
+    public async IAsyncEnumerable<dynamic?> DailyScheduleSummary([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+                                                                [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+                                                                [SwaggerParameter("검색 년도", Required = true)] int year,
+                                                                [SwaggerParameter("검색 월", Required = true)] int month)
+    {
+        var snap = await _instanceSnapshotQueries.Get(accountId, instanceId, year, month);
+        if (snap == null)
+            yield break;
+
+        var jobIds = await _instanceJobQueries.GetInstanceJobsAsync(accountId, new[] { instanceId })
+            .ContinueWith(t => t.Result.Select(ij => ij.JobId));
+        if (jobIds == null || jobIds.Count() <= 0)
+            yield break;
+
+        DateTime from = new DateTime(year, month, 1);
+        DateTime to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+        var schedules = _p2Client.GetSchedules(jobIds)
+                                 .Where(s =>
+                                 {
+                                     var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);
+                                     return isValid && activateDate < to;
+                                 });
+        if (schedules == null || schedules.Count() <= 0)
+            yield break;
+
+        for (int i = 1; i <= DateTime.DaysInMonth(year, month); i++)
+        {
+            List<dynamic> occurrenceSchedules = new List<dynamic>();
+            int scheduleCount = 0;
+            int occurrenceCount = 0;
+
+            schedules = schedules.Where(s =>
+            {
+                var isNotExpired = true;
+                if (DateTime.TryParse(s.ExpireDate, out DateTime exDate))
+                    if (exDate.CompareTo(new DateTime(year, month, i)) < 0)
+                        isNotExpired = false;
+                return isNotExpired;
+            });
+
+            foreach (var schedule in schedules)
+            {
+                //if (DateTime.TryParse(schedule.ExpireDate, out DateTime exDate))
+                //    if (exDate.CompareTo(new DateTime(year, month, i)) < 0)
+                //        continue;
+
+                string cron = string.Empty;
+                try
+                {
+                    cron = CronExpressionConverter.ConvertToQuartzCronFormat(schedule.Cron);
+                }
+                catch { continue; }
+
+                var cronExpression = new Quartz.CronExpression(cron);
+
+                var fromDate = new DateTime(year, month, i, 0, 0, 0) < DateTime.Parse(schedule.ActivateDate) 
+                    ? DateTime.Parse(schedule.ActivateDate) 
+                    : new DateTime(year, month, i, 0, 0, 0);
+                var toDate = DateTime.TryParse(schedule.ExpireDate, out DateTime exDate) && new DateTime(year, month, i, 23, 59, 59) > exDate
+                    ? exDate
+                    : new DateTime(year, month, i, 23, 59, 59);
+
+                var occurrences = GetOccurrences(fromDate, toDate, cronExpression);
+
+                if (occurrences?.Any() == false)
+                    continue;
+
+                scheduleCount++;
+                var data = new
+                {
+                    SchId = schedule.SchId,
+                    CronExpression = schedule.Cron,
+                    OccurrenceDate = occurrences!.Select(o => o.ToLocalTime())
+                };
+                occurrenceSchedules.Add(data);
+                occurrenceCount += data.OccurrenceDate.Count();
+            }
+
+            if (occurrenceSchedules.Any())
+                yield return new
+                {
+                    Date = new DateTime(year, month, i),
+                    ScheduleCount = scheduleCount,
+                    OccurrenceCount = occurrenceCount,
+                    Schedules = occurrenceSchedules
+                };
+        }
+    }
+
+    private IEnumerable<DateTimeOffset> GetOccurrences(DateTime from, DateTime to, Quartz.CronExpression cronExpression)
+    {
+        if (from > to)
+            yield break;
+
+        var occurrence = cronExpression.GetTimeAfter(from);
+
+        while (occurrence <= to)
+        {
+            yield return occurrence.Value;
+            occurrence = cronExpression.GetTimeAfter(occurrence.Value);
+
+            if (occurrence.HasValue == false)
+                yield break;
+        }
     }
 }

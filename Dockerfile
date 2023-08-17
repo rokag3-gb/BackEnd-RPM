@@ -10,7 +10,7 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
 COPY --from=chisel /opt/chisel/chisel /usr/bin/
 RUN mkdir /rootfs \
     && chisel cut --release "ubuntu-22.04" --root /rootfs \
-        libicu70_libs libssl3_libs tzdata
+        libicu70_libs libssl3_libs 
 
 WORKDIR /source
 
