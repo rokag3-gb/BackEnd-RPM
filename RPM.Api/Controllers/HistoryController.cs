@@ -67,30 +67,70 @@ public class HistoryController : ControllerBase
     [HttpGet]
     [Route("{accountId}/history")]
     [SwaggerOperation("특정 Instance_Job에 해당하는 P2 History를 조회합니다.")]
-    public async Task<dynamic> GetHistory(
+    public async Task<IEnumerable<dynamic>> GetHistory(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        [SwaggerParameter("대상 인스턴스 ID(s)", Required = false), FromQuery] List<long>? instanceIds,
-        [SwaggerParameter("검색시작일시", Required = false), FromQuery] DateTime? periodFrom,
-        [SwaggerParameter("검색종료일시", Required = false), FromQuery] DateTime? periodTo
+        [SwaggerParameter("대상 인스턴스 ID(s)", Required = true), FromQuery] List<long> instanceIds,
+        [SwaggerParameter("검색시작일시", Required = true), FromQuery] DateTime? periodFrom,
+        [SwaggerParameter("검색종료일시", Required = true), FromQuery] DateTime? periodTo
         )
     {
-        if (instanceIds == null || instanceIds.Count <= 0)
-            instanceIds.Add(10);
+        #region (주석처리) 빠른 테스트를 위한 변수 강제 초기화
+        //if (accountId is null || accountId <= 0)
+        //    accountId = 1;
 
-        if (periodFrom is null)
-            periodFrom = Convert.ToDateTime("2023-07-01 09:00");
+        //if (instanceIds is null || instanceIds.Count <= 0)
+        //    instanceIds.Add(10);
 
-        if (periodTo is null)
-            periodTo = Convert.ToDateTime("2023-08-31 23:59");
+        //if (periodFrom is null)
+        //    periodFrom = Convert.ToDateTime("2023-07-01 09:00");
+
+        //if (periodTo is null)
+        //    periodTo = Convert.ToDateTime("2023-08-31 23:59");
+        #endregion
 
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
-        // Instance Ids 로 JobIds 구해오기
+        // Instance Ids 로 JobIds 구하기
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
 
-        var runs = _p2Client.GetRunListByJobIds(jobIds, accountId, periodFrom, periodTo, token);
+        // P2 통해서 Run 데이터 가져오기
+        var runs = await _p2Client.GetRunListByJobIds(jobIds, accountId, periodFrom, periodTo, token);
 
-        return runs;
+        // #ACC 코드 가져오기
+        var actionCode = await _salesClient.GetKindCodeChilds(token, "ACC");
+
+        if (actionCode is null)
+            actionCode = new List<Code>();
+
+        // 데이터 결합하여 동적인 IEnumerable 생성
+        var result = runs.Runs
+            .Join(instJobs
+                    , r => r.JobId, i => i.JobId
+                    , (r, i) => new { r, i })
+            .Join(actionCode
+                    , r => r.i.ActionCode, c => c.CodeKey
+                    , (r, c) => new
+                    {
+                        r.r.RunId,
+                        r.r.AccountId,
+                        r.r.StartedDate,
+                        r.r.RunStateCode,
+                        r.r.RunStateName,
+                        r.r.CompletedDate,
+                        r.r.HostInfo,
+                        r.r.JobId,
+                        r.r.JobName,
+                        r.r.SchId,
+                        r.r.ScheduleName,
+                        r.r.DurationMilliseconds,
+                        r.i.SNo,
+                        r.i.InstId,
+                        r.i.ActionCode,
+                        ActionName = c?.Name,
+                        r.i.SavedAt,
+                    });
+
+        return result;
     }
 }

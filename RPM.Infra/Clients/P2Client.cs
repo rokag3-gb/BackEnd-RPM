@@ -48,7 +48,7 @@ public interface IP2Client
 
     Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
 
-    Task<List<RunData>> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token);
+    Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token);
 }
 
 public class P2Client : IP2Client
@@ -168,7 +168,7 @@ public class P2Client : IP2Client
         return response?.Run;
     }
 
-    public async Task<List<RunData>> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token)
+    public async Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token)
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
 
@@ -198,12 +198,12 @@ public class P2Client : IP2Client
 
         var response = await client.GetListByJobAsync(request, headers);
 
-        List<RunData> runDataList = new List<RunData>(response.Runs.Count);
-        for (int i = 0; i < response.Runs.Count; i++)
-        {
-            runDataList.Add(response.Runs[i]);
-        }
+        //List<RunData> runDataList = new List<RunData>(response.Runs.Count);
+        //for (int i = 0; i < response.Runs.Count; i++)
+        //{
+        //    runDataList.Add(response.Runs[i]);
+        //}
 
-        return runDataList;
+        return response;
     }
 }
