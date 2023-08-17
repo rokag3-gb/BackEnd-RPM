@@ -36,8 +36,7 @@ public interface IP2Client
         string savedByUserId
     );
 
-    IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobId);
-
+   IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobId, DateTime? activateDate = null, DateTime? expireDate = null);
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
         DateTime from,
@@ -112,11 +111,16 @@ public class P2Client : IP2Client
         var response = client.CreateSchedules(request);
     }
 
-    public IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobIds)
+    public IEnumerable<JobScheduleData> GetSchedules(IEnumerable<long> jobIds, DateTime? activateDate = null, DateTime? expireDate = null)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
         var schedsReq = new ScheduleListRequest();
         schedsReq.JobIds.AddRange(jobIds);
+        if (activateDate != null)
+            schedsReq.ActivateDate = activateDate.Value.ToString("o");
+        if (expireDate != null)
+            schedsReq.ExpireDate = expireDate.Value.ToString("o");
+
         var response = client.GetSchedules(schedsReq);
         var list = response.Schedules.ToList();
         return list;
