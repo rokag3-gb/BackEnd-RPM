@@ -48,7 +48,7 @@ public interface IP2Client
 
     Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
 
-    Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token);
+    Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token);
 }
 
 public class P2Client : IP2Client
@@ -168,7 +168,7 @@ public class P2Client : IP2Client
         return response?.Run;
     }
 
-    public async Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string token)
+    public async Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token)
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
 
@@ -193,8 +193,11 @@ public class P2Client : IP2Client
             , RunState.Unspecified
             , RunState.Disabled
         });
-        request.Offset = 0;
-        request.Limit = 1000;
+
+        if (offset is not null)
+            request.Offset = offset.Value;
+        if (limit is not null)
+            request.Limit = limit.Value;
 
         var response = await client.GetListByJobAsync(request, headers);
 

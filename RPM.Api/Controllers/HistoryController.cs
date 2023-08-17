@@ -71,7 +71,9 @@ public class HistoryController : ControllerBase
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("대상 인스턴스 ID(s)", Required = true), FromQuery] List<long> instanceIds,
         [SwaggerParameter("검색시작일시", Required = true), FromQuery] DateTime? periodFrom,
-        [SwaggerParameter("검색종료일시", Required = true), FromQuery] DateTime? periodTo
+        [SwaggerParameter("검색종료일시", Required = true), FromQuery] DateTime? periodTo,
+        [SwaggerParameter("Offset, Limit 을 둘다 제공하면 작동합니다.", Required = false), FromQuery] long? offset,
+        [SwaggerParameter("Offset, Limit 을 둘다 제공하면 작동합니다.", Required = false), FromQuery] long? limit
         )
     {
         #region (주석처리) 빠른 테스트를 위한 변수 강제 초기화
@@ -95,7 +97,7 @@ public class HistoryController : ControllerBase
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
 
         // P2 통해서 Run 데이터 가져오기
-        var runs = await _p2Client.GetRunListByJobIds(jobIds, accountId, periodFrom, periodTo, token);
+        var runs = await _p2Client.GetRunListByJobIds(jobIds, accountId, periodFrom, periodTo, offset, limit, token);
 
         // #ACC 코드 가져오기
         var actionCode = await _salesClient.GetKindCodeChilds(token, "ACC");
@@ -103,33 +105,35 @@ public class HistoryController : ControllerBase
         if (actionCode is null)
             actionCode = new List<Code>();
 
-        // 데이터 결합하여 동적인 IEnumerable 생성
-        var result = runs.Runs
+        // Run과 instJobs를 inner join하여 IEnumerable1 생성
+        var IEnumerable1 = runs.Runs
             .Join(instJobs
                     , r => r.JobId, i => i.JobId
-                    , (r, i) => new { r, i })
-            .Join(actionCode
-                    , r => r.i.ActionCode, c => c.CodeKey
-                    , (r, c) => new
-                    {
-                        r.r.RunId,
-                        r.r.AccountId,
-                        r.r.StartedDate,
-                        r.r.RunStateCode,
-                        r.r.RunStateName,
-                        r.r.CompletedDate,
-                        r.r.HostInfo,
-                        r.r.JobId,
-                        r.r.JobName,
-                        r.r.SchId,
-                        r.r.ScheduleName,
-                        r.r.DurationMilliseconds,
-                        r.i.SNo,
-                        r.i.InstId,
-                        r.i.ActionCode,
-                        ActionName = c?.Name,
-                        r.i.SavedAt,
-                    });
+                    , (r, i) => new { r, i });
+
+        // IEnumerable1에 ActionCode 를 left outer join하여 result 생성
+        var result = from run in IEnumerable1
+                      join code in actionCode on run.i.ActionCode equals code.CodeKey into d
+                      from outer in d.DefaultIfEmpty()
+                      select new {
+                          run.r.RunId,
+                          run.r.AccountId,
+                          run.r.StartedDate,
+                          run.r.RunStateCode,
+                          run.r.RunStateName,
+                          run.r.CompletedDate,
+                          run.r.HostInfo,
+                          run.r.JobId,
+                          run.r.JobName,
+                          run.r.SchId,
+                          run.r.ScheduleName,
+                          run.r.DurationMilliseconds,
+                          run.i.SNo,
+                          run.i.InstId,
+                          run.i.ActionCode,
+                          ActionName = outer?.Name,
+                          run.i.SavedAt,
+                      };
 
         return result;
     }
