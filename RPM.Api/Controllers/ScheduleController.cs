@@ -54,7 +54,7 @@ public class ScheduleController : ControllerBase
 
     [HttpGet]
     [Route("{accountId}/schedules")]
-    public async Task<IEnumerable<JobScheduleData>> GetSchedules(
+    public async Task<IEnumerable<ScheduleDto>> GetSchedules(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds
     )
@@ -62,6 +62,20 @@ public class ScheduleController : ControllerBase
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
         var sched =  _p2Client.GetSchedules(jobIds);
-        return sched;
+        var joined = from i in instJobs join s in sched on i.JobId equals s.JobId select new ScheduleDto(){ 
+            InstId = i.InstId,
+            SchId = s.SchId
+            AccountId = s.AccountId,
+            JobId = s.JobId,
+            Cron = s.Cron,
+            IsEnable = s.IsEnable,
+            ActivateDate = s.ActivateDate,
+            ExpireDate = s.ExpireDate,
+            Note = s.Note,
+            SaveDate = s.SaveDate,
+            SaveUserId = s.SaveUserId,
+            ScheduleName = s.ScheduleName
+         };
+        return joined;
     }
 }
