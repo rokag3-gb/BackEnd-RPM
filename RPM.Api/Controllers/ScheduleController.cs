@@ -7,6 +7,7 @@ using MediatR;
 using RPM.Infra.Clients;
 using P2.API.Services.Commons;
 using RPM.Api.Model;
+using RPM.Domain.Dto;
 using Quartz;
 using Google.Api.Gax;
 
@@ -63,7 +64,7 @@ public class ScheduleController : ControllerBase
         var sched =  _p2Client.GetSchedules(jobIds);
         var joined = from i in instJobs join s in sched on i.JobId equals s.JobId select new ScheduleDto(){ 
             InstId = i.InstId,
-            SchId = s.SchId
+            SchId = s.SchId,
             AccountId = s.AccountId,
             JobId = s.JobId,
             Cron = s.Cron,
