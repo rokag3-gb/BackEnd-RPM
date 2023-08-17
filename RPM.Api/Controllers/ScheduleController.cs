@@ -52,7 +52,7 @@ public class ScheduleController : ControllerBase
 
    
 
-    [HttpPost]
+    [HttpGet]
     [Route("{accountId}/schedules")]
     public async Task<IEnumerable<JobScheduleData>> GetSchedules(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
