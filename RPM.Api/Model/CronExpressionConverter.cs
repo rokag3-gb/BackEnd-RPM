@@ -14,10 +14,11 @@ namespace RPM.Api.Model
         {
             string[] cronParts = cronExpression.Split(' ');
 
+            if (cronParts.Length == 7)
+                return cronExpression;
+
             if (cronParts.Length < 5)
-            {
-                throw new ArgumentException("Invalid cron expression format.");
-            }
+                return string.Empty;
 
             if (cronParts.Length == 5)
             {
@@ -27,16 +28,18 @@ namespace RPM.Api.Model
             }
 
             string dayOfWeek = cronParts[5];
-            if (IsValidDayOfWeek(dayOfWeek))
+            if (IsIntegerDayOfWeek(dayOfWeek))
             {
                 string quartzDayOfWeek = ConvertDayOfWeekToQuartzFormat(dayOfWeek);
                 cronParts[5] = quartzDayOfWeek;
             }
+            else if (dayOfWeek == "*")
+                cronParts[5] = "?";
 
             return string.Join(" ", cronParts);
         }
 
-        private static bool IsValidDayOfWeek(string dayOfWeek)
+        private static bool IsIntegerDayOfWeek(string dayOfWeek)
         {
             string pattern = @"^\d+(-\d+)?$";
             return Regex.IsMatch(dayOfWeek, pattern);

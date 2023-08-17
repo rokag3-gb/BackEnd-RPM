@@ -147,8 +147,10 @@ public class ScheduleController : ControllerBase
                     continue;
                 }
 
-                var cronExpression = new Quartz.CronExpression(cron);
+                if (CronExpression.IsValidExpression(cron) == false)
+                    continue;
 
+                var cronExpression = new Quartz.CronExpression(cron);
                 var fromDate =
                     new DateTime(year, month, i, 0, 0, 0) < DateTime.Parse(schedule.ActivateDate)
                         ? DateTime.Parse(schedule.ActivateDate)
