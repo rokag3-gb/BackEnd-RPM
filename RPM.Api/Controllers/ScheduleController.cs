@@ -209,6 +209,8 @@ public class ScheduleController : ControllerBase
                 {
                     SchId = schedule.SchId,
                     ScheduleName = schedule.ScheduleName,
+                    ActivateDate = schedule.ActivateDate,
+                    ExpireDate = schedule.ExpireDate,
                     CronExpression = schedule.Cron,
                     OccurrenceDate = occurrences!.Select(o => o.ToLocalTime())
                 };
