@@ -4,7 +4,7 @@ using RPM.Domain.Models;
 public class ScheduleDto
 {
     public long InstId { get; set; }
-    public Instance Instance { get; set; }
+    public InstanceDto Instance { get; set; }
     public long SchId { get; set; }
     public long AccountId { get; set; }
     public long JobId { get; set; }
