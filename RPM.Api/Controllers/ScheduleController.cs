@@ -69,8 +69,6 @@ public class ScheduleController : ControllerBase
             {
                 InstId = ij.InstId,
                 Instance = i,
-                InstJobId = ij.SNo,
-                InstJob = ij,
                 SchId = s.SchId,
                 AccountId = s.AccountId,
                 JobId = s.JobId,
@@ -81,7 +79,10 @@ public class ScheduleController : ControllerBase
                 Note = s.Note,
                 SaveDate = s.SaveDate,
                 SaveUserId = s.SaveUserId,
-                ScheduleName = s.ScheduleName
+                ScheduleName = s.ScheduleName,
+                SNo = ij.SNo,
+                ActionCode = ij.ActionCode,
+                InstanceJobSavedAt = ij.SavedAt
             };
         return joined;
     }
