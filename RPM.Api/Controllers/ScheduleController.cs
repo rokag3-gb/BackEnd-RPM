@@ -23,6 +23,7 @@ public class ScheduleController : ControllerBase
     private readonly IInstanceJobQueries _instanceJobQueries;
     private readonly IAMClient _iamClient;
     private readonly IP2Client _p2Client;
+    private readonly SalesClient _salesClient;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
     private readonly IInstanceSnapshotQueries _instanceSnapshotQueries;
@@ -35,6 +36,7 @@ public class ScheduleController : ControllerBase
         IInstanceSnapshotQueries instanceSnapshotQueries,
         IAMClient iamClient,
         IP2Client p2Client,
+        SalesClient salesClient,
         IMediator mediator,
         IMapper mapper
     )
@@ -46,6 +48,7 @@ public class ScheduleController : ControllerBase
         _instanceSnapshotQueries = instanceSnapshotQueries;
         _iamClient = iamClient;
         _p2Client = p2Client;
+        _salesClient = salesClient;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper;
     }
@@ -57,14 +60,41 @@ public class ScheduleController : ControllerBase
         [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds
     )
     {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
+
+        var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
         var instances = _instanceQueries.GetInstancesByIds(accountId, instanceIds);
+        var instancesJoined = from i in instances
+                              join v in venderList on i.Vendor equals v.CodeKey
+                              select new InstanceDto(){
+                                    InstId = i.InstId,
+                                    AccountId = i.AccountId,
+                                    CredId = i.CredId,
+                                    Vendor = i.Vendor,
+                                    VendorName = v.Name,
+                                    ResourceId = i.ResourceId,
+                                    IsEnable = i.IsEnable,
+                                    Name = i.Name,
+                                    Region = i.Region,
+                                    Type = i.Type,
+                                    Tags = i.Tags,
+                                    Info = i.Info,
+                                    Note = i.Note,
+                                    SavedAt = i.SavedAt,
+                                    SaverId = i.SaverId
+                              };
+
         var sched = _p2Client.GetSchedules(jobIds);
+        
+        var userList = await _iamClient.ResolveUserList(
+            token, sched.Select((x) => x.SaveUserId).ToHashSet());
         var joined =
             from ij in instJobs
             join s in sched on ij.JobId equals s.JobId
-            join i in instances on ij.InstId equals i.InstId
+            join i in instancesJoined on ij.InstId equals i.InstId
+            join u in userList on s.SaveUserId equals u.Id
             select new ScheduleDto()
             {
                 InstId = ij.InstId,
@@ -79,8 +109,13 @@ public class ScheduleController : ControllerBase
                 Note = s.Note,
                 SaveDate = s.SaveDate,
                 SaveUserId = s.SaveUserId,
-                ScheduleName = s.ScheduleName
+                SaveUserName = u.Username,
+                ScheduleName = s.ScheduleName,
+                SNo = ij.SNo,
+                ActionCode = ij.ActionCode,
+                InstanceJobSavedAt = ij.SavedAt
             };
+            
         return joined;
     }
 
