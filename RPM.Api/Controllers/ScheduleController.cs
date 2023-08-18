@@ -170,6 +170,7 @@ public class ScheduleController : ControllerBase
                 var data = new
                 {
                     SchId = schedule.SchId,
+                    ScheduleName = schedule.ScheduleName,
                     CronExpression = schedule.Cron,
                     OccurrenceDate = occurrences!.Select(o => o.ToLocalTime())
                 };
