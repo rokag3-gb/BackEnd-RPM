@@ -57,15 +57,16 @@ public class ScheduleController : ControllerBase
     [Route("{accountId}/schedules")]
     public async Task<IEnumerable<ScheduleDto>> GetSchedules(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds
+        [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds = null
     )
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
-
+        var instIdsFromInstJobs = instJobs.Select((x) => x.InstId).ToList();
         var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
-        var instances = _instanceQueries.GetInstancesByIds(accountId, instanceIds);
+        var accCodeList = await _salesClient.GetKindCodeChilds(token, "ACC");
+        var instances = _instanceQueries.GetInstancesByIds(accountId, instIdsFromInstJobs);
         var instancesJoined = from i in instances
                               join v in venderList on i.Vendor equals v.CodeKey
                               select new InstanceDto(){
@@ -86,7 +87,7 @@ public class ScheduleController : ControllerBase
                                     SaverId = i.SaverId
                               };
 
-        var sched = _p2Client.GetSchedules(jobIds);
+        var sched = _p2Client.GetSchedules(accountId, jobIds);
         
         var userList = await _iamClient.ResolveUserList(
             token, sched.Select((x) => x.SaveUserId).ToHashSet());
@@ -95,6 +96,7 @@ public class ScheduleController : ControllerBase
             join s in sched on ij.JobId equals s.JobId
             join i in instancesJoined on ij.InstId equals i.InstId
             join u in userList on s.SaveUserId equals u.Id
+            join ac in accCodeList on ij.ActionCode equals ac.CodeKey
             select new ScheduleDto()
             {
                 InstId = ij.InstId,
@@ -113,6 +115,7 @@ public class ScheduleController : ControllerBase
                 ScheduleName = s.ScheduleName,
                 SNo = ij.SNo,
                 ActionCode = ij.ActionCode,
+                ActionName = ac.Name,
                 InstanceJobSavedAt = ij.SavedAt
             };
             
@@ -142,7 +145,7 @@ public class ScheduleController : ControllerBase
         DateTime from = new DateTime(year, month, 1);
         DateTime to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
         var schedules = _p2Client
-            .GetSchedules(jobIds)
+            .GetSchedules(accountId, jobIds)
             .Where(s =>
             {
                 var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);
