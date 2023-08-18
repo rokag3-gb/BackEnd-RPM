@@ -21,6 +21,6 @@ public class ScheduleDto
     // InstanceJob fields
     public long SNo { get; set; }
     public string ActionCode { get; set; }
-    public string ActioonName { get; set; }
+    public string ActionName { get; set; }
     public DateTime InstanceJobSavedAt { get; set; }
 }

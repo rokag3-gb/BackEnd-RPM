@@ -15,7 +15,7 @@ public class InstanceJobQueries : IInstanceJobQueries
         _rpmDbConn = salesDbConn;
     }
    
-    public IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds)
+    public IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds= null)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
@@ -25,7 +25,7 @@ public class InstanceJobQueries : IInstanceJobQueries
         }
     }
 
-    public async Task<IEnumerable<InstanceJob>> GetInstanceJobsAsync(long accountId, IEnumerable<long>? instanceIds)
+    public async Task<IEnumerable<InstanceJob>> GetInstanceJobsAsync(long accountId, IEnumerable<long>? instanceIds= null)
     {
         using var conn = _rpmDbConn.CreateConnection();
         var template = BuildGetInstanceJob(accountId, instanceIds);
@@ -42,13 +42,13 @@ public class InstanceJobQueries : IInstanceJobQueries
 
         var builder = new SqlBuilder();
         var template = builder.AddTemplate(queryTemplate);
-        builder.InnerJoin("Instance i on t1.InstId = i.InstId");
-        builder.Where(@"
-(exists(select null from instance_job as t2
-where (t2.actioncode = 'ACT-TON') and (t1.instid = t2.instid))) 
-and (exists(select null from instance_job as t3
-where (t3.actioncode = 'ACT-OFF') and (t1.instid = t3.instid))) 
-and i.AccountId = @AccountId", new { AccountId = accountId });
+        builder = builder.InnerJoin("Instance i on t1.InstId = i.InstId");
+        builder = builder.Where(@"
+            (exists(select null from instance_job as t2
+            where (t2.actioncode = 'ACT-TON') and (t1.instid = t2.instid))) 
+            and (exists(select null from instance_job as t3
+            where (t3.actioncode = 'ACT-OFF') and (t1.instid = t3.instid))) 
+            and i.AccountId = @AccountId", new { AccountId = accountId });
 
         return await conn.QueryAsync<InstanceJob>(template.RawSql, template.Parameters);
     }
