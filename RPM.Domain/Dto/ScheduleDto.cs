@@ -15,6 +15,7 @@ public class ScheduleDto
     public string Note { get; set; }
     public string SaveDate { get; set; }
     public string SaveUserId { get; set; }
+    public string SaveUserName { get; set; }
     public string ScheduleName { get; set; }
 
     // InstanceJob fields

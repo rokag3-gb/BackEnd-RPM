@@ -61,10 +61,14 @@ public class ScheduleController : ControllerBase
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
         var instances = _instanceQueries.GetInstancesByIds(accountId, instanceIds);
         var sched = _p2Client.GetSchedules(jobIds);
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var userList = await _iamClient.ResolveUserList(
+            token, sched.Select((x) => x.SaveUserId).ToHashSet());
         var joined =
             from ij in instJobs
             join s in sched on ij.JobId equals s.JobId
             join i in instances on ij.InstId equals i.InstId
+            join u in userList on s.SaveUserId equals u.Id
             select new ScheduleDto()
             {
                 InstId = ij.InstId,
@@ -79,11 +83,13 @@ public class ScheduleController : ControllerBase
                 Note = s.Note,
                 SaveDate = s.SaveDate,
                 SaveUserId = s.SaveUserId,
+                SaveUserName = u.Username,
                 ScheduleName = s.ScheduleName,
                 SNo = ij.SNo,
                 ActionCode = ij.ActionCode,
                 InstanceJobSavedAt = ij.SavedAt
             };
+            
         return joined;
     }
 
