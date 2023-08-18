@@ -69,6 +69,8 @@ public class ScheduleController : ControllerBase
             {
                 InstId = ij.InstId,
                 Instance = i,
+                InstJobId = ij.SNo,
+                InstJob = ij,
                 SchId = s.SchId,
                 AccountId = s.AccountId,
                 JobId = s.JobId,

@@ -5,6 +5,8 @@ public class ScheduleDto
 {
     public long InstId { get; set; }
     public Instance Instance { get; set; }
+    public long InstJobId {get; set;}
+    public InstanceJob InstJob {get; set;}
     public long SchId {get; set;}
     public long AccountId {get; set;}
     public long JobId {get; set;}
