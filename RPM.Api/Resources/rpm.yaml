@@ -4,7 +4,8 @@ inputValues:
   credJson: --cred-dict-json-data {Credentials_json}
   actionCode: --action-code "ACC-OFF" # 켜고 싶으면 "ACC-TON" 으로 설정
   delaySecond: --seconds 300 # 5분
-  colsonAuth: --auth-user cm-app-colson-user --auth-pw <ColsonPW>
+  colsonAuthUser: --auth-user cm-app-colson-user
+  colsonAuthPw: --auth-pw <ColsonPW>
   colsonTarget: --group-id <Colson Group Chat ID>
   colsonMsgStart: --message "RPM Power Switch Dag Start"
   colsonMsgEnd: --message "RPM Power Switch Dag Complete"
@@ -21,7 +22,8 @@ jobTasks:
   - tDelay
   command: notify.py
   inputs:
-  - colsonAuth
+  - colsonAuthUser
+  - colsonAuthPw
   - colsonTarget
   - colsonMsgStart
 - name: tDelay
@@ -65,8 +67,9 @@ jobTasks:
   output: result_google
 - name: tEnd
   isEnabled: true
-  command: install_deps.py
+  command: notify.py
   inputs:
-  - colsonAuth
+  - colsonAuthUser
+  - colsonAuthPw
   - colsonTarget
   - colsonMsgEnd
