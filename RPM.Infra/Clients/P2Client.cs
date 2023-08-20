@@ -36,7 +36,19 @@ public interface IP2Client
         string savedByUserId
     );
 
-   IEnumerable<JobScheduleData> GetSchedules(long accountId, IEnumerable<long> jobId, DateTime? activateDate = null, DateTime? expireDate = null);
+    IEnumerable<JobScheduleData> GetSchedules(
+        long accountId,
+        IEnumerable<long> jobId,
+        DateTime? activateDate = null,
+        DateTime? expireDate = null
+    );
+
+    void UpdateSchedules(
+        long accountId,
+        long jobId,
+        IEnumerable<UpdateScheduleData> schedules
+    );
+
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
         DateTime from,
@@ -45,9 +57,24 @@ public interface IP2Client
         string token
     );
 
-    Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token);
+    Task<RunData?> GetLatest(
+        IEnumerable<long> jobIds,
+        long? accountId,
+        DateTime? from,
+        DateTime? to,
+        string? runState,
+        string token
+    );
 
-    Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token);
+    Task<RunListResponse> GetRunListByJobIds(
+        IEnumerable<long> jobIds,
+        long? accountId,
+        DateTime? from,
+        DateTime? to,
+        long? offset,
+        long? limit,
+        string? token
+    );
 }
 
 public class P2Client : IP2Client
@@ -111,7 +138,23 @@ public class P2Client : IP2Client
         var response = client.CreateSchedules(request);
     }
 
-    public IEnumerable<JobScheduleData> GetSchedules(long accountId, IEnumerable<long>? jobIds = null, DateTime? activateDate = null, DateTime? expireDate = null)
+    public void UpdateSchedules(
+        long accountId,
+        long jobId,
+        IEnumerable<UpdateScheduleData> schedules
+    ){
+        var client = new ScheduleUpdateApiService.ScheduleUpdateApiServiceClient(_grpcChannel);
+        var request = new UpdateSchedulesRequest(){ JobId = jobId };
+        request.Schedules.AddRange(schedules);
+        client.UpdateSchedule(request);
+    }
+
+    public IEnumerable<JobScheduleData> GetSchedules(
+        long accountId,
+        IEnumerable<long>? jobIds = null,
+        DateTime? activateDate = null,
+        DateTime? expireDate = null
+    )
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
         var schedsReq = new ScheduleListRequest();
@@ -153,10 +196,17 @@ public class P2Client : IP2Client
         return response.Runs;
     }
 
-    public async Task<RunData?> GetLatest(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, string? runState, string token)
+    public async Task<RunData?> GetLatest(
+        IEnumerable<long> jobIds,
+        long? accountId,
+        DateTime? from,
+        DateTime? to,
+        string? runState,
+        string token
+    )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
-        
+
         var headers = new Grpc.Core.Metadata();
         headers.Add("Authorization", $"Bearer {token}");
 
@@ -174,7 +224,15 @@ public class P2Client : IP2Client
         return response?.Run;
     }
 
-    public async Task<RunListResponse> GetRunListByJobIds(IEnumerable<long> jobIds, long? accountId, DateTime? from, DateTime? to, long? offset, long? limit, string? token)
+    public async Task<RunListResponse> GetRunListByJobIds(
+        IEnumerable<long> jobIds,
+        long? accountId,
+        DateTime? from,
+        DateTime? to,
+        long? offset,
+        long? limit,
+        string? token
+    )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
 
@@ -190,15 +248,18 @@ public class P2Client : IP2Client
 
         request.PeriodFrom = from?.ToString("o");
         request.PeriodTo = to?.ToString("o");
-        request.RunState.AddRange(new [] {
-            RunState.Running
-            , RunState.Queued
-            , RunState.Success
-            , RunState.Canceled
-            , RunState.Failed
-            , RunState.Unspecified
-            , RunState.Disabled
-        });
+        request.RunState.AddRange(
+            new[]
+            {
+                RunState.Running,
+                RunState.Queued,
+                RunState.Success,
+                RunState.Canceled,
+                RunState.Failed,
+                RunState.Unspecified,
+                RunState.Disabled
+            }
+        );
 
         if (offset is not null)
             request.Offset = offset.Value;

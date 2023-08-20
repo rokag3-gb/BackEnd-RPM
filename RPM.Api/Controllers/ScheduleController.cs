@@ -10,6 +10,7 @@ using RPM.Api.Model;
 using RPM.Domain.Dto;
 using Quartz;
 using Google.Api.Gax;
+using P2.API.Services.Schedule;
 
 namespace RPM.Api.Controllers;
 
@@ -120,6 +121,22 @@ public class ScheduleController : ControllerBase
             };
             
         return joined;
+    }
+
+    [HttpPost]
+    [Route("{accountId}/schedule")]
+    public async Task<IEnumerable<ScheduleDto>> UpdateSchedule(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [FromQuery, SwaggerParameter("", Required = true)] long jobId,
+        [FromQuery, SwaggerParameter("", Required = true)] long scheduleId,
+        [FromBody] UpdateScheduleData schedule
+    )
+    {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var inputList = new List<UpdateScheduleData>();
+        inputList.Add(schedule);
+        _p2Client.UpdateSchedules(accountId, jobId, inputList);
+        return null;
     }
 
     [HttpGet]
