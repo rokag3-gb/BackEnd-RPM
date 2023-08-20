@@ -58,7 +58,8 @@ public class ScheduleController : ControllerBase
     [Route("{accountId}/schedules")]
     public async Task<IEnumerable<ScheduleDto>> GetSchedules(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery] IEnumerable<long>? instanceIds = null
+        [SwaggerParameter("인스턴스 ID 목록", Required = false), FromQuery]
+            IEnumerable<long>? instanceIds = null
     )
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
@@ -68,30 +69,34 @@ public class ScheduleController : ControllerBase
         var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
         var accCodeList = await _salesClient.GetKindCodeChilds(token, "ACC");
         var instances = _instanceQueries.GetInstancesByIds(accountId, instIdsFromInstJobs);
-        var instancesJoined = from i in instances
-                              join v in venderList on i.Vendor equals v.CodeKey
-                              select new InstanceDto(){
-                                    InstId = i.InstId,
-                                    AccountId = i.AccountId,
-                                    CredId = i.CredId,
-                                    Vendor = i.Vendor,
-                                    VendorName = v.Name,
-                                    ResourceId = i.ResourceId,
-                                    IsEnable = i.IsEnable,
-                                    Name = i.Name,
-                                    Region = i.Region,
-                                    Type = i.Type,
-                                    Tags = i.Tags,
-                                    Info = i.Info,
-                                    Note = i.Note,
-                                    SavedAt = i.SavedAt,
-                                    SaverId = i.SaverId
-                              };
+        var instancesJoined =
+            from i in instances
+            join v in venderList on i.Vendor equals v.CodeKey
+            select new InstanceDto()
+            {
+                InstId = i.InstId,
+                AccountId = i.AccountId,
+                CredId = i.CredId,
+                Vendor = i.Vendor,
+                VendorName = v.Name,
+                ResourceId = i.ResourceId,
+                IsEnable = i.IsEnable,
+                Name = i.Name,
+                Region = i.Region,
+                Type = i.Type,
+                Tags = i.Tags,
+                Info = i.Info,
+                Note = i.Note,
+                SavedAt = i.SavedAt,
+                SaverId = i.SaverId
+            };
 
         var sched = _p2Client.GetSchedules(accountId, jobIds);
-        
+
         var userList = await _iamClient.ResolveUserList(
-            token, sched.Select((x) => x.SaveUserId).ToHashSet());
+            token,
+            sched.Select((x) => x.SaveUserId).ToHashSet()
+        );
         var joined =
             from ij in instJobs
             join s in sched on ij.JobId equals s.JobId
@@ -119,11 +124,11 @@ public class ScheduleController : ControllerBase
                 ActionName = ac.Name,
                 InstanceJobSavedAt = ij.SavedAt
             };
-            
+
         return joined;
     }
 
-    [HttpPost]
+    [HttpPut]
     [Route("{accountId}/schedule")]
     public async Task<IEnumerable<ScheduleDto>> UpdateSchedule(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
@@ -136,6 +141,19 @@ public class ScheduleController : ControllerBase
         var inputList = new List<UpdateScheduleData>();
         inputList.Add(schedule);
         _p2Client.UpdateSchedules(accountId, jobId, inputList);
+        return null;
+    }
+
+    [HttpDelete]
+    [Route("{accountId}/schedule")]
+    public async Task<IEnumerable<ScheduleDto>> DeleteSchedule(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [FromQuery, SwaggerParameter("", Required = true)] long scheduleId
+    )
+    {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+        _p2Client.DeleteSchedule(accountId, scheduleId);
         return null;
     }
 

@@ -43,11 +43,9 @@ public interface IP2Client
         DateTime? expireDate = null
     );
 
-    void UpdateSchedules(
-        long accountId,
-        long jobId,
-        IEnumerable<UpdateScheduleData> schedules
-    );
+    void UpdateSchedules(long accountId, long jobId, IEnumerable<UpdateScheduleData> schedules);
+
+    void DeleteSchedule(long accountId, long scheduleId);
 
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
@@ -142,11 +140,20 @@ public class P2Client : IP2Client
         long accountId,
         long jobId,
         IEnumerable<UpdateScheduleData> schedules
-    ){
+    )
+    {
         var client = new ScheduleUpdateApiService.ScheduleUpdateApiServiceClient(_grpcChannel);
-        var request = new UpdateSchedulesRequest(){ JobId = jobId };
+        var request = new UpdateSchedulesRequest() { JobId = jobId };
         request.Schedules.AddRange(schedules);
         client.UpdateSchedule(request);
+    }
+
+    public void DeleteSchedule(long accountId, long scheduleId)
+    {
+        var client = new ScheduleDeleteApiService.ScheduleDeleteApiServiceClient(_grpcChannel);
+        var request = new DeleteScheduleRequest();
+        request.SchIds.Add(scheduleId);
+        client.DeleteSchedule(request);
     }
 
     public IEnumerable<JobScheduleData> GetSchedules(
