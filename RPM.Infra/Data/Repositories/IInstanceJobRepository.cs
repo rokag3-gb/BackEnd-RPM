@@ -5,4 +5,5 @@ namespace RPM.Infra.Data.Repositories;
 public interface IInstanceJobRepository {
     
     InstanceJob CreateSingleInstanceJob(InstanceJobModifyDto instance);
+    int DeleteSingleInstanceJob(long sNo);
 }
