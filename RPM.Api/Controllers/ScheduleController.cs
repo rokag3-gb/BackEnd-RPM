@@ -10,6 +10,7 @@ using RPM.Domain.Dto;
 using Quartz;
 using System.Security.Claims;
 using RPM.Api.App.Commands;
+using Microsoft.Identity.Client;
 
 namespace RPM.Api.Controllers;
 
@@ -267,6 +268,15 @@ public class ScheduleController : ControllerBase
                 };
         }
     }
+
+    [HttpGet]
+    [Route("{accountId}/schedule/{schId}")]
+    [SwaggerOperation("대상 스케줄을 조회합니다")]
+    public async Task<ActionResult<dynamic>> GetSchedule([SwaggerParameter("스케줄 ID", Required = true)] long schId)
+    {
+        return await _p2Client.GetSchedule(schId);
+    }
+
 
     private IEnumerable<DateTimeOffset> GetOccurrences(
         DateTime from,

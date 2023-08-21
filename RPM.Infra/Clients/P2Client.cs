@@ -67,6 +67,7 @@ public interface IP2Client
     );
 
     void DeleteJob(long jobId);
+    Task<JobScheduleData> GetSchedule(long schId);
 }
 
 public class P2Client : IP2Client
@@ -183,6 +184,15 @@ public class P2Client : IP2Client
         var response = client.GetSchedules(schedsReq);
         var list = response.Schedules.ToList();
         return list;
+    }
+
+    public async Task<JobScheduleData> GetSchedule(long schId)
+    {
+        var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
+        return await client.GetScheduleAsync(new SingleScheduleGetRequest
+        {
+            SchId = schId
+        });
     }
 
     /// <summary>
