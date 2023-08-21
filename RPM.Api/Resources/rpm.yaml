@@ -9,6 +9,7 @@ inputValues:
   colsonTarget: --group-id <Colson Group Chat ID>
   colsonMsgStart: --message "RPM Power Switch Dag Start"
   colsonMsgEnd: --message "RPM Power Switch Dag Complete"
+  colsonBypassSsl: --bypass-ssl
 jobTasks:
 - name: tInstall
   isEnabled: true
@@ -26,6 +27,7 @@ jobTasks:
   - colsonAuthPw
   - colsonTarget
   - colsonMsgStart
+  - colsonBypassSsl
 - name: tDelay
   isEnabled: true
   next:
@@ -73,3 +75,4 @@ jobTasks:
   - colsonAuthPw
   - colsonTarget
   - colsonMsgEnd
+  - colsonBypassSsl
