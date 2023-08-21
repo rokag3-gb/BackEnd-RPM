@@ -37,7 +37,7 @@ public interface IP2Client
 
     void UpdateSchedule(long jobId, long schId, string saverUserId, ScheduleModifyDto schedule);
 
-    void DeleteSchedule(long accountId, long scheduleId);
+    void DeleteSchedule(long scheduleId);
 
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
@@ -65,6 +65,8 @@ public interface IP2Client
         long? limit,
         string? token
     );
+
+    void DeleteJob(long jobId);
 }
 
 public class P2Client : IP2Client
@@ -153,7 +155,7 @@ public class P2Client : IP2Client
         client.UpdateSchedule(request);
     }
 
-    public void DeleteSchedule(long accountId, long scheduleId)
+    public void DeleteSchedule( long scheduleId)
     {
         var client = new ScheduleDeleteApiService.ScheduleDeleteApiServiceClient(_grpcChannel);
         var request = new DeleteScheduleRequest();
@@ -287,5 +289,12 @@ public class P2Client : IP2Client
         //}
 
         return response;
+    }
+
+    public void DeleteJob(long jobId)
+    {
+        var client = new JobDeleteApiService.JobDeleteApiServiceClient(_grpcChannel);
+        var request = new JobDeleteRequest(){ JobId = jobId };
+        client.Delete(request);
     }
 }

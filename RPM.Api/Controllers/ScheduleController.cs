@@ -5,13 +5,11 @@ using Swashbuckle.AspNetCore.Annotations;
 using AutoMapper;
 using MediatR;
 using RPM.Infra.Clients;
-using P2.API.Services.Commons;
 using RPM.Api.Model;
 using RPM.Domain.Dto;
 using Quartz;
-using Google.Api.Gax;
-using P2.API.Services.Schedule;
 using System.Security.Claims;
+using RPM.Api.App.Commands;
 
 namespace RPM.Api.Controllers;
 
@@ -145,15 +143,22 @@ public class ScheduleController : ControllerBase
 
     [HttpDelete]
     [Route("{accountId}/schedule")]
-    public async Task<IEnumerable<ScheduleDto>> DeleteSchedule(
+    public async Task<ActionResult> DeleteSchedule(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-        [FromQuery, SwaggerParameter("", Required = true)] long scheduleId
+        [FromQuery, SwaggerParameter("", Required = true)] long scheduleId,
+        [FromQuery, SwaggerParameter("", Required = true)] long jobId,
+        [FromQuery, SwaggerParameter("", Required = true)] long instJobSNo
     )
     {
-        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-        _p2Client.DeleteSchedule(accountId, scheduleId);
-        return null;
+        await _mediator.Send(
+            new DeleteScheduleCommand()
+            {
+                ScheduleId = scheduleId,
+                JobId = jobId,
+                InstJobSNo = instJobSNo
+            }
+        );
+        return Ok();
     }
 
     [HttpGet]

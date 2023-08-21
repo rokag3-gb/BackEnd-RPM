@@ -30,4 +30,21 @@ public class InstanceJobRepository : IInstanceJobRepository
             return result;
         }
     }
+
+    public int DeleteSingleInstanceJob(long sNo)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = @$"delete from Instance_Job /**where**/";
+
+            var builder = new SqlBuilder();
+
+            builder = builder.Where("SNo = @sNo", new { sNo = sNo });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            return conn.Execute(template.RawSql, template.Parameters);
+        }
+    }
 }
