@@ -11,6 +11,7 @@ using RPM.Domain.Dto;
 using Quartz;
 using Google.Api.Gax;
 using P2.API.Services.Schedule;
+using System.Security.Claims;
 
 namespace RPM.Api.Controllers;
 
@@ -130,18 +131,16 @@ public class ScheduleController : ControllerBase
 
     [HttpPut]
     [Route("{accountId}/schedule")]
-    public async Task<IEnumerable<ScheduleDto>> UpdateSchedule(
+    public async Task<ActionResult> UpdateSchedule(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [FromQuery, SwaggerParameter("", Required = true)] long jobId,
         [FromQuery, SwaggerParameter("", Required = true)] long scheduleId,
-        [FromBody] UpdateScheduleData schedule
+        [FromBody] ScheduleModifyDto schedule
     )
     {
-        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-        var inputList = new List<UpdateScheduleData>();
-        inputList.Add(schedule);
-        _p2Client.UpdateSchedules(accountId, jobId, inputList);
-        return null;
+        var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        _p2Client.UpdateSchedule(jobId, scheduleId, userId, schedule);
+        return Ok();
     }
 
     [HttpDelete]
