@@ -32,6 +32,9 @@ namespace RPM.Api.Model
             {
                 string quartzDayOfWeek = ConvertDayOfWeekToQuartzFormat(dayOfWeek);
                 cronParts[5] = quartzDayOfWeek;
+
+                if (cronParts[3] == "*")
+                    cronParts[3] = "?";
             }
             else if (dayOfWeek == "*")
                 cronParts[5] = "?";
