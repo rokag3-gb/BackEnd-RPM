@@ -4,6 +4,7 @@ using P2.API.Services.Job;
 using P2.API.Services.Commons;
 using P2.API.Services.Run;
 using RPM.Domain.Dto;
+using Grpc.Core;
 
 namespace RPM.Infra.Clients;
 
@@ -67,7 +68,7 @@ public interface IP2Client
     );
 
     void DeleteJob(long jobId);
-    Task<JobScheduleData> GetSchedule(long schId);
+    Task<JobScheduleData?> GetSchedule(long schId);
 }
 
 public class P2Client : IP2Client
@@ -186,13 +187,25 @@ public class P2Client : IP2Client
         return list;
     }
 
-    public async Task<JobScheduleData> GetSchedule(long schId)
+    public async Task<JobScheduleData?> GetSchedule(long schId)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
-        return await client.GetScheduleAsync(new SingleScheduleGetRequest
+        try
         {
-            SchId = schId
-        });
+            var schedule = await client.GetScheduleAsync(new SingleScheduleGetRequest
+            {
+                SchId = schId
+            });
+            return schedule;
+        }
+        catch (RpcException ex)
+        {
+            if (ex.StatusCode == StatusCode.Cancelled)
+                return null;
+            throw;
+        }
+
+        
     }
 
     /// <summary>

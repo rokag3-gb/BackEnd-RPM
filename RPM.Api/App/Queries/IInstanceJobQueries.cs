@@ -4,7 +4,7 @@ using RPM.Domain.Models;
 namespace RPM.Api.App.Queries;
 
 public interface IInstanceJobQueries {
-    IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds = null);
+    IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds = null, IEnumerable<long>? jobIds = null);
     Task<IEnumerable<InstanceJob>> GetInstanceJobsAsync(long accountId, IEnumerable<long>? instanceIds = null);
 
     /// <summary>

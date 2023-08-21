@@ -15,11 +15,11 @@ public class InstanceJobQueries : IInstanceJobQueries
         _rpmDbConn = salesDbConn;
     }
    
-    public IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds= null)
+    public IEnumerable<InstanceJob> GetInstanceJobs(long accountId, IEnumerable<long>? instanceIds= null, IEnumerable<long>? jobIds = null)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
-            var template = BuildGetInstanceJob(accountId, instanceIds);
+            var template = BuildGetInstanceJob(accountId, instanceIds, jobIds);
             conn.Open();
             return conn.Query<InstanceJob>(template.RawSql, template.Parameters).AsList();
         }
@@ -54,7 +54,8 @@ public class InstanceJobQueries : IInstanceJobQueries
     }
 
     private SqlBuilder.Template BuildGetInstanceJob(long accountId,
-                                                   IEnumerable<long>? instanceIds)
+                                                   IEnumerable<long>? instanceIds,
+                                                   IEnumerable<long>? jobIds = null)
     {
         var queryTemplate = "select /**select**/ from Instance_Job AS J /**innerjoin**/ /**where**/";
         var selects =
@@ -67,6 +68,8 @@ public class InstanceJobQueries : IInstanceJobQueries
         {
             builder = builder.Where("I.InstId IN @instanceIds", new { instanceIds = instanceIds });
         }
+        if (jobIds != null && jobIds.Count() > 0)
+            builder = builder.Where("J.JobId IN @jobIds", new { jobIds = jobIds });
         var template = builder.AddTemplate(queryTemplate);
         return template;
     }

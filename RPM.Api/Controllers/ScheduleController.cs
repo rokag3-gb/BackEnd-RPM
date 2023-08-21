@@ -11,6 +11,7 @@ using Quartz;
 using System.Security.Claims;
 using RPM.Api.App.Commands;
 using Microsoft.Identity.Client;
+using P2.API.Services.Commons;
 
 namespace RPM.Api.Controllers;
 
@@ -272,9 +273,30 @@ public class ScheduleController : ControllerBase
     [HttpGet]
     [Route("{accountId}/schedule/{schId}")]
     [SwaggerOperation("대상 스케줄을 조회합니다")]
-    public async Task<ActionResult<dynamic>> GetSchedule([SwaggerParameter("스케줄 ID", Required = true)] long schId)
+    public async Task<ActionResult<dynamic?>> GetSchedule([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("스케줄 ID", Required = true)] long schId)
     {
-        return await _p2Client.GetSchedule(schId);
+        var schedule = await _p2Client.GetSchedule(schId);
+        if (schedule == null)
+            return Ok(null!);
+
+        var ij = _instanceJobQueries.GetInstanceJobs(accountId, jobIds: new[] { schedule.JobId });
+
+        return Ok(new 
+        {
+            schedule.SaveDate,
+            schedule.ActivateDate,
+            schedule.ExpireDate,
+            schedule.IsEnable,
+            schedule.AccountId,
+            schedule.JobId,
+            schedule.SchId,
+            schedule.ScheduleName,
+            schedule.Note,
+            schedule.Cron,
+            schedule.SaveUserId,
+            ij.FirstOrDefault()?.ActionCode
+        });
     }
 
 

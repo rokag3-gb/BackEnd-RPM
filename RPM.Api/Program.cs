@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using RPM.Infra.Clients;
 using RPM.Api.Model;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -35,7 +36,7 @@ builder.Services
             options.Audience = configuration.GetValue<string>("Jwt:Audience");
         }
     );
-builder.Services.AddControllers();
+builder.Services.AddControllers(option => option.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>());
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
