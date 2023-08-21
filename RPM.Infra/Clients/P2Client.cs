@@ -2,16 +2,8 @@
 using P2.API.Services.Schedule;
 using P2.API.Services.Job;
 using P2.API.Services.Commons;
-using System.Collections;
 using P2.API.Services.Run;
-using Google.Cloud.Compute.V1;
-using Grpc.Core;
-using YamlDotNet.Core.Tokens;
-using Amazon.EC2.Model;
-using Amazon.EC2;
-using System.CodeDom.Compiler;
-using System.Diagnostics;
-using Google.Protobuf.Collections;
+using RPM.Domain.Dto;
 
 namespace RPM.Infra.Clients;
 
@@ -43,7 +35,7 @@ public interface IP2Client
         DateTime? expireDate = null
     );
 
-    void UpdateSchedules(long accountId, long jobId, IEnumerable<UpdateScheduleData> schedules);
+    void UpdateSchedule(long jobId, long schId, string saverUserId, ScheduleModifyDto schedule);
 
     void DeleteSchedule(long accountId, long scheduleId);
 
@@ -136,15 +128,28 @@ public class P2Client : IP2Client
         var response = client.CreateSchedules(request);
     }
 
-    public void UpdateSchedules(
-        long accountId,
+    public void UpdateSchedule(
         long jobId,
-        IEnumerable<UpdateScheduleData> schedules
+        long schId,
+        string saverUserId,
+        ScheduleModifyDto schedule
     )
     {
         var client = new ScheduleUpdateApiService.ScheduleUpdateApiServiceClient(_grpcChannel);
         var request = new UpdateSchedulesRequest() { JobId = jobId };
-        request.Schedules.AddRange(schedules);
+        request.Schedules.Add(
+            new UpdateScheduleData()
+            {
+                SchId = schId,
+                ScheduleName = schedule.ScheduleName,
+                Cron = schedule.Cron,
+                IsEnable = schedule.IsEnable,
+                ActivateDate = schedule.ActivateDate.ToString(),
+                ExpireDate = schedule.ExpireDate.ToString(),
+                Note = schedule.Note,
+                SaveUserId = saverUserId,
+            }
+        );
         client.UpdateSchedule(request);
     }
 
