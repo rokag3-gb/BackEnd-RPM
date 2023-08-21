@@ -5,8 +5,8 @@ inputValues:
   actionCode: --action-code "ACC-OFF" # 켜고 싶으면 "ACC-TON" 으로 설정
   delaySecond: --seconds 30 # 5분
   colsonAuthUser: --auth-user cm-app-colson-user
-  colsonAuthPw: --auth-pw 'zmffkdnemapdlxm1Emd!'
-  colsonTarget: --group-id '19:e695265abd0549cd9e99dfd74a40e02e@thread.v2'
+  colsonAuthPw: --auth-pw zmffkdnemapdlxm1Emd!
+  colsonTarget: --group-id 19:e695265abd0549cd9e99dfd74a40e02e@thread.v2
   colsonMsgStart: --message "RPM Power Switch Dag Start"
   colsonMsgEnd: --message "RPM Power Switch Dag Complete"
   colsonBypassSsl: --bypass-ssl
