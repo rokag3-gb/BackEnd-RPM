@@ -186,7 +186,7 @@ public class ScheduleController : ControllerBase
         DateTime from = new DateTime(year, month, 1);
         DateTime to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
         var schedules = _p2Client
-            .GetSchedules(accountId, jobIds)
+            .GetSchedules(accountId, jobIds, isEnable: true)
             .Where(s =>
             {
                 var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);

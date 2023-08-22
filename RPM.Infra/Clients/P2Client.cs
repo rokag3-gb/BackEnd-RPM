@@ -33,7 +33,8 @@ public interface IP2Client
         long accountId,
         IEnumerable<long> jobId,
         DateTime? activateDate = null,
-        DateTime? expireDate = null
+        DateTime? expireDate = null,
+        bool? isEnable = null
     );
 
     void UpdateSchedule(long jobId, long schId, string saverUserId, ScheduleModifyDto schedule);
@@ -169,7 +170,8 @@ public class P2Client : IP2Client
         long accountId,
         IEnumerable<long>? jobIds = null,
         DateTime? activateDate = null,
-        DateTime? expireDate = null
+        DateTime? expireDate = null,
+        bool? isEnable = null
     )
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
@@ -181,6 +183,8 @@ public class P2Client : IP2Client
             schedsReq.ActivateDate = activateDate.Value.ToString("o");
         if (expireDate != null)
             schedsReq.ExpireDate = expireDate.Value.ToString("o");
+        if (isEnable != null)
+            schedsReq.IsEnable = isEnable.Value;
 
         var response = client.GetSchedules(schedsReq);
         var list = response.Schedules.ToList();
