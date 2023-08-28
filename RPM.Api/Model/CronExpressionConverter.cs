@@ -39,34 +39,46 @@ namespace RPM.Api.Model
             else if (dayOfWeek == "*")
                 cronParts[5] = "?";
 
+            if (Regex.IsMatch(cronParts[3], @"\d")
+               && (Regex.IsMatch(cronParts[5], @"\d") || Regex.IsMatch(cronParts[5], @"\b(?:SUN|MON|TUE|WED|THU|FRI|SAT)\b", RegexOptions.IgnoreCase)))
+                cronParts[3] = "?";
+
             return string.Join(" ", cronParts);
         }
 
         private static bool IsIntegerDayOfWeek(string dayOfWeek)
         {
-            string pattern = @"^\d+(-\d+)?$";
+            string pattern = @"^(\d+(-\d+)?)(,\d+(-\d+)?)*$";
             return Regex.IsMatch(dayOfWeek, pattern);
         }
 
         private static string ConvertDayOfWeekToQuartzFormat(string dayOfWeek)
         {
-            if (dayOfWeek.Contains("-"))
-            {
-                string[] range = dayOfWeek.Split('-');
-                int startDay = int.Parse(range[0]);
-                int endDay = int.Parse(range[1]);
+            string[] values = dayOfWeek.Split(',');
+            string quartzDayOfWeek = "";
 
-                if (startDay < 0 || startDay > 7 || endDay < 0 || endDay > 7 || startDay > endDay)
+            foreach (var value in values)
+            {
+                if (value.Contains("-"))
                 {
-                    throw new ArgumentException("Invalid day of week range.");
-                }
+                    string[] range = value.Split('-');
+                    int startDay = int.Parse(range[0]);
+                    int endDay = int.Parse(range[1]);
 
-                return $"{ChangeToDayName(range[0])}-{ChangeToDayName(range[1])}";
+                    if (string.IsNullOrEmpty(quartzDayOfWeek) == false)
+                        quartzDayOfWeek += ",";
+
+                    quartzDayOfWeek += $"{ChangeToDayName(range[0])}-{ChangeToDayName(range[1])}";
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(quartzDayOfWeek) == false)
+                        quartzDayOfWeek += ",";
+
+                    quartzDayOfWeek += $"{ChangeToDayName(value)}";
+                }
             }
-            else
-            {
-                return ChangeToDayName(dayOfWeek);
-            }
+            return quartzDayOfWeek;
         }
 
         private static string ChangeToDayName(string dayOfWeek)
