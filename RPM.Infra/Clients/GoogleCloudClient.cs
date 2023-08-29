@@ -3,6 +3,7 @@ using Google.Cloud.Compute.V1;
 using Google.Apis.Services;
 using System.Threading.Channels;
 using RPM.Domain.Dto;
+using Grpc.Core;
 
 namespace RPM.Infra.Clients;
 
@@ -45,5 +46,44 @@ public class GoogleCloudClient
             Status = vm.Status == "RUNNING" ? "running" : "stopped",
             StatusCodeFromVendor = vm.Status
         };
+    }
+
+    public async Task<bool> ToggleGcloudComputeEnginePower(
+        string regionCode,
+        string instanceId,
+        bool power
+    )
+    {
+        var builder = new InstancesClientBuilder() { GoogleCredential = _credential };
+        var projId = ((ServiceAccountCredential)_credential.UnderlyingCredential).ProjectId;
+        var client = builder.Build();
+        var vm = await client.GetAsync(projId, regionCode, instanceId);
+        if (power)
+        {
+            StartInstanceRequest request = new StartInstanceRequest { Instance = vm.ToString() };
+            try
+            {
+                var response = client.Start(request);
+            }
+            catch (RpcException e)
+            {
+                Console.WriteLine($"Error starting instance: {e.Status.Detail}");
+                return false;
+            }
+        }
+        else
+        {
+            StopInstanceRequest request = new StopInstanceRequest { Instance = vm.ToString() };
+            try
+            {
+                var response = client.Stop(request);
+            }
+            catch (RpcException e)
+            {
+                Console.WriteLine($"Error stopping instance: {e.Status.Detail}");
+                return false;
+            }
+        }
+        return true;
     }
 }
