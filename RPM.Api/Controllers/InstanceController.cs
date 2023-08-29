@@ -292,7 +292,7 @@ public class InstanceController : ControllerBase
     [Route("{accountId}/instance/{instanceId}/togglePower")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Consumes(MediaTypeNames.Application.Json)]
-    public async Task<ActionResult<Credential>> ToggleInstancePowerAsync(
+    public async Task<ActionResult<InstanceToggleResultDto>> ToggleInstancePowerAsync(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
         [SwaggerParameter("인스턴스 ID", Required = true)] string actionCode
@@ -315,6 +315,10 @@ public class InstanceController : ControllerBase
                 PowerToggle = power
             }
         );
+        return new InstanceToggleResultDto(){
+            InstId = instanceId,
+            WasToggleSuccessful = result
+        };
     }
 
     [HttpDelete]
