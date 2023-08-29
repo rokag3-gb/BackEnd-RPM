@@ -66,7 +66,7 @@ public class InstanceToggleCommandHandler
             case "VEN-GCP":
                 var gcloudClient = new GoogleCloudClient(credential.CredData);
                 result = await gcloudClient.ToggleGcloudComputeEnginePowerAsync(
-                    instance.ResourceId,
+                    instance.Region,
                     instance.ResourceId,
                     request.PowerToggle
                 );
