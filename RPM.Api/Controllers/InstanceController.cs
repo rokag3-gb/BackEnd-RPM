@@ -89,9 +89,12 @@ public class InstanceController : ControllerBase
             venderList = new List<Code>();
 
         // instances와 venderList를 조인
-        var joinedInstances = instances
-            .Join(venderList, i => i.Vendor?.ToString(), c => c.CodeKey?.ToString(), (i, c) => new { i, c })
-            ;
+        var joinedInstances = instances.Join(
+            venderList,
+            i => i.Vendor?.ToString(),
+            c => c.CodeKey?.ToString(),
+            (i, c) => new { i, c }
+        );
 
         var result =
             from i in joinedInstances
@@ -254,7 +257,10 @@ public class InstanceController : ControllerBase
                 break;
             case "VEN-GCP":
                 var gcp = new GoogleCloudClient(credential.CredData);
-                vmStatus = await gcp.GetGcloudComputeEngineStatus(instance.Region, instance.ResourceId);
+                vmStatus = await gcp.GetGcloudComputeEngineStatus(
+                    instance.Region,
+                    instance.ResourceId
+                );
                 break;
         }
         return vmStatus;
@@ -279,6 +285,35 @@ public class InstanceController : ControllerBase
             nameof(GetById),
             new { accountId = accountId, instanceId = result.InstId },
             result
+        );
+    }
+
+    [HttpPut]
+    [Route("{accountId}/instance/{instanceId}/togglePower")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public async Task<ActionResult<Credential>> ToggleInstancePowerAsync(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+        [SwaggerParameter("인스턴스 ID", Required = true)] string actionCode
+    )
+    {
+        bool power = true;
+        if (actionCode == "ACT-TON")
+        {
+            power = false;
+        }
+        else if (actionCode == "ACT-OFF")
+        {
+            power = false;
+        }
+        var result = await _mediator.Send(
+            new InstanceToggleCommand()
+            {
+                AccountId = accountId,
+                InstanceId = instanceId,
+                PowerToggle = power
+            }
         );
     }
 
@@ -318,26 +353,31 @@ public class InstanceController : ControllerBase
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/dailyCost")]
     [SwaggerOperation("대상 인스턴스의 한달 간 일별 사용 금액을 조회합니다.")]
-    public async IAsyncEnumerable<dynamic> DailyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-                                                                    [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
-                                                                    [SwaggerParameter("검색 년도", Required = true)] int year,
-                                                                    [SwaggerParameter("검색 월", Required = true)] int month)
+    public async IAsyncEnumerable<dynamic> DailyCost(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+        [SwaggerParameter("검색 년도", Required = true)] int year,
+        [SwaggerParameter("검색 월", Required = true)] int month
+    )
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-        await foreach(var cost in _instanceCostCalculator.DailyCost(accountId, instanceId, year, month, token))
+        await foreach (
+            var cost in _instanceCostCalculator.DailyCost(accountId, instanceId, year, month, token)
+        )
         {
             yield return cost;
         }
     }
 
-
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/monthlyCost")]
     [SwaggerOperation("대상 년월로부터 최근 12개월 간 인스턴스의 월간 사용금액을 조회합니다.")]
-    public async IAsyncEnumerable<InstanceCostDto> MonthlyCost([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
-                                                               [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
-                                                               [SwaggerParameter("검색 년도", Required = true)] int year,
-                                                               [SwaggerParameter("검색 월", Required = true)] int month)
+    public async IAsyncEnumerable<InstanceCostDto> MonthlyCost(
+        [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
+        [SwaggerParameter("인스턴스 ID", Required = true)] long instanceId,
+        [SwaggerParameter("검색 년도", Required = true)] int year,
+        [SwaggerParameter("검색 월", Required = true)] int month
+    )
     {
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
@@ -349,7 +389,14 @@ public class InstanceController : ControllerBase
             dateList.Add(to.AddMonths(-i));
         }
 
-        await foreach (var instanceCost in _instanceCostCalculator.InstanceCostPerMonth(accountId, new[] { instanceId }, dateList, token))
+        await foreach (
+            var instanceCost in _instanceCostCalculator.InstanceCostPerMonth(
+                accountId,
+                new[] { instanceId },
+                dateList,
+                token
+            )
+        )
         {
             yield return instanceCost.First();
         }
