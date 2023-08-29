@@ -60,7 +60,7 @@ public class AzureClient
         // ... print other properties you want to retrieve
     }
 
-    public async Task<bool> ToggleAzureVMPower(string rgName, string vmName, bool power)
+    public async Task<bool> ToggleAzureVMPowerAsync(string rgName, string vmName, bool power)
     {
         // Create an instance of the ComputeManagementClient using your Azure credentials
         ArmClient armClient = new ArmClient(_credential);

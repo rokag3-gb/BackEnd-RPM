@@ -48,7 +48,7 @@ public class GoogleCloudClient
         };
     }
 
-    public async Task<bool> ToggleGcloudComputeEnginePower(
+    public async Task<bool> ToggleGcloudComputeEnginePowerAsync(
         string regionCode,
         string instanceId,
         bool power

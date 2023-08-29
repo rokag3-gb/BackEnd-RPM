@@ -1,18 +1,13 @@
 using MediatR;
 using RPM.Api.App.Queries;
 using RPM.Infra.Clients;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
-using RPM.Domain.P2Models;
-using RPM.Domain.Dto;
 using System.Text.Json;
-using RPM.Infra.Data.Repositories;
-using System.Reflection;
+using Azure.Identity;
 
 namespace RPM.Api.App.Commands;
 
 public class InstanceToggleCommandHandler
-    : IRequestHandler<InstanceToggleCommand, IEnumerable<long>>
+    : IRequestHandler<InstanceToggleCommand, bool>
 {
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
@@ -29,21 +24,55 @@ public class InstanceToggleCommandHandler
         _config = config;
     }
 
-    public async Task<IEnumerable<long>> Handle(
+    public async Task<bool> Handle(
         InstanceToggleCommand request,
         CancellationToken cancellationToken
     )
     {
         // VM, Credential 목록 쿼리
-        var instance = _instanceQueries.GetInstanceById(
-            request.AccountId,
-            request.InstanceId
-        );
-        var credential = _credentialQueries.GetCredentialById(
-            request.AccountId,
-            instance.CredId
-        );
-      
-        return null;
+        var instance = _instanceQueries.GetInstanceById(request.AccountId, request.InstanceId);
+        var credential = _credentialQueries.GetCredentialById(request.AccountId, instance.CredId);
+
+        bool result = false;
+        var credData = JsonSerializer.Deserialize<JsonElement>(credential.CredData);
+        switch (credential.Vendor)
+        {
+            case "VEN-AZT":
+                var azureClient = new AzureClient(
+                    new ClientSecretCredential(
+                        credData.GetProperty("tenant_id").GetString(),
+                        credData.GetProperty("client_id").GetString(),
+                        credData.GetProperty("client_secret").GetString()
+                    )
+                );
+                var instanceInfo = JsonSerializer.Deserialize<JsonElement>(instance.Info);
+                result = await azureClient.ToggleAzureVMPowerAsync(
+                    instanceInfo.GetProperty("Id").GetProperty("ResourceGroupName").GetString(),
+                    instance.Name,
+                    request.PowerToggle
+                );
+                break;
+            case "VEN-AWS":
+                var awsClient = new AWSClient(
+                    credData.GetProperty("access_key_id").GetString(),
+                    credData.GetProperty("access_key_secret").GetString()
+                );
+                result = await awsClient.ToggleAwsVMPowerAsync(
+                    credData.GetProperty("region_code").GetString(),
+                    instance.ResourceId,
+                    request.PowerToggle
+                );
+                break;
+            case "VEN-GCP":
+                var gcloudClient = new GoogleCloudClient(credential.CredData);
+                result = await gcloudClient.ToggleGcloudComputeEnginePowerAsync(
+                    instance.ResourceId,
+                    instance.ResourceId,
+                    request.PowerToggle
+                );
+                break;
+        }
+
+        return result;
     }
 }
