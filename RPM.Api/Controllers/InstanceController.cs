@@ -301,7 +301,7 @@ public class InstanceController : ControllerBase
         bool power = true;
         if (actionCode == "ACT-TON")
         {
-            power = false;
+            power = true;
         }
         else if (actionCode == "ACT-OFF")
         {
