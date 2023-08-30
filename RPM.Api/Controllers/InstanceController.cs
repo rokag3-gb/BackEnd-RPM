@@ -299,11 +299,11 @@ public class InstanceController : ControllerBase
     )
     {
         bool power = true;
-        if (actionCode == "ACT-TON")
+        if (actionCode == "ACC-TON")
         {
             power = true;
         }
-        else if (actionCode == "ACT-OFF")
+        else if (actionCode == "ACC-OFF")
         {
             power = false;
         }
