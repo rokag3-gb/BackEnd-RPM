@@ -36,7 +36,8 @@ stages:
         repositories:
         - p2server
       pool:
-        vmImage: $(vmImageName)
+        # vmImage: $(vmImageName)
+        name: Default
       steps:
         - checkout: self
           submodules: recursive
@@ -64,7 +65,8 @@ stages:
         repositories:
         - p2server
       pool:
-        vmImage: $(vmImageName)
+        # vmImage: $(vmImageName)
+        name: Default
       steps:
         - checkout: self
           submodules: recursive
