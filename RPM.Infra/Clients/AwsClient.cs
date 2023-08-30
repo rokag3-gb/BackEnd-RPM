@@ -53,9 +53,34 @@ public class AWSClient
 
         // Iterate through the reservations and instances
         var status = response.Reservations.First().Instances.First().State.Name;
-        return new InstancesStatusDto(){
-            Status = status,
-            StatusCodeFromVendor = status
+        return new InstancesStatusDto() { Status = status, StatusCodeFromVendor = status };
+    }
+
+    public async Task<bool> ToggleAwsVMPowerAsync(string regionCode, string instanceId, bool power)
+    {
+        var clientConfig = new AmazonEC2Config
+        {
+            RegionEndpoint = RegionEndpoint.GetBySystemName(regionCode), // Specify the region for the client
         };
+        var ec2Client = new AmazonEC2Client(_credential, clientConfig);
+
+        if (power)
+        {
+            StartInstancesRequest request = new StartInstancesRequest
+            {
+                InstanceIds = new List<string> { instanceId }
+            };
+            StartInstancesResponse response = await ec2Client.StartInstancesAsync(request);
+            return response.StartingInstances.Count > 0;
+        }
+        else
+        {
+            StopInstancesRequest request = new StopInstancesRequest
+            {
+                InstanceIds = new List<string> { instanceId }
+            };
+            StopInstancesResponse response = await ec2Client.StopInstancesAsync(request);
+            return response.StoppingInstances.Count > 0;
+        }
     }
 }
