@@ -90,8 +90,11 @@ public class RegisterInstanceJobCommandHandler
                     var deserializer = new DeserializerBuilder()
                         .WithNamingConvention(CamelCaseNamingConvention.Instance) // see height_in_inches in sample yml
                         .Build();
+
+                    var actName = request.ActionCode == "ACC-OFF" ? "Turn Off" : "Turn On";
                     var dag = deserializer.Deserialize<Job>(fileContent);
                     dag.InputValues["actionCode"] = $"--action-code {request.ActionCode}";
+                    dag.InputValues["actionName"] = $"--action-name {actName}";
                     dag.InputValues["instJson"] =
                         $"--vm-list-json-data {JsonSerializer.Serialize(instanceListStripped)}";
                     dag.InputValues["credJson"] =

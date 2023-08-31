@@ -3,6 +3,7 @@ inputValues:
   instJson: --vm-list-json-data {Instance_json}
   credJson: --cred-dict-json-data {Credentials_json}
   actionCode: --action-code "ACC-OFF" # 켜고 싶으면 "ACC-TON" 으로 설정
+  actionName: --action-name "Turn Off"
   delaySecond: --seconds 30 # 5분
   colsonAuthUser: --auth-user cm-app-colson-user
   colsonAuthPw: --auth-pw zmffkdnemapdlxm1Emd!
@@ -10,6 +11,8 @@ inputValues:
   colsonMsgStart: --message "RPM Power Switch Dag Start"
   colsonMsgEnd: --message "RPM Power Switch Dag Complete"
   colsonBypassSsl: --bypass-ssl
+  jobId: --jobid 000
+  scheduleId: --scheduleid 000
 jobTasks:
 - name: tInstall
   isEnabled: true
@@ -28,6 +31,10 @@ jobTasks:
   - colsonTarget
   - colsonMsgStart
   - colsonBypassSsl
+  - jobId
+  - scheduleId
+  - actionCode
+  - actionName
 - name: tDelay
   isEnabled: true
   next:
@@ -76,3 +83,7 @@ jobTasks:
   - colsonTarget
   - colsonMsgEnd
   - colsonBypassSsl
+  - jobId
+  - scheduleId
+  - actionCode
+  - actionName
