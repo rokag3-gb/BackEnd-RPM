@@ -47,4 +47,20 @@ public class InstanceJobRepository : IInstanceJobRepository
             return conn.Execute(template.RawSql, template.Parameters);
         }
     }
+
+    public int DeleteByInstanceId(long instanceId){
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = @$"delete from Instance_Job /**where**/";
+
+            var builder = new SqlBuilder();
+
+            builder = builder.Where("InstId = @InstId", new { InstId = instanceId });
+
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            return conn.Execute(template.RawSql, template.Parameters);
+        }
+    }
 }
