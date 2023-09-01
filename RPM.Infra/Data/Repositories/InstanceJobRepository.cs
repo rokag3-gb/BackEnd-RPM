@@ -18,8 +18,7 @@ public class InstanceJobRepository : IInstanceJobRepository
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
-            var fields =
-                "InstId, JobId, ActionCode";
+            var fields = "InstId, JobId, ActionCode";
             var queryTemplate =
                 @$"insert into Instance_Job ({fields})
             output inserted.SNo, inserted.InstId, inserted.JobId, inserted.ActionCode, inserted.SavedAt
@@ -48,19 +47,14 @@ public class InstanceJobRepository : IInstanceJobRepository
         }
     }
 
-    public int DeleteByInstanceId(long instanceId){
-        using (var conn = _rpmDbConn.CreateConnection())
-        {
-            var queryTemplate = @$"delete from Instance_Job /**where**/";
-
-            var builder = new SqlBuilder();
-
-            builder = builder.Where("InstId = @InstId", new { InstId = instanceId });
-
-            var template = builder.AddTemplate(queryTemplate);
-
-            conn.Open();
-            return conn.Execute(template.RawSql, template.Parameters);
-        }
+    public int DeleteByInstanceIds(
+        IEnumerable<long> instanceIds,
+        IDbConnection conn,
+        IDbTransaction tx
+    )
+    {
+        var queryTemplate = @$"delete from Instance_Job where InstId = @instId";
+        var queryParams = instanceIds.Select(x => new { instId = x });
+        return conn.Execute(queryTemplate, queryParams);
     }
 }

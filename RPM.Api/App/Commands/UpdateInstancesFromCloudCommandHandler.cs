@@ -18,18 +18,21 @@ public class UpdateInstancesFromCloudCommandHandler
     ICredentialQueries _credentialQueries;
     IInstanceQueries _instanceQueries;
     IInstanceRepository _instanceRepository;
+    IInstanceJobRepository _instanceJobRepository;
     IMapper _mapper;
 
     public UpdateInstancesFromCloudCommandHandler(
         ICredentialQueries credentialQueries,
         IInstanceQueries instanceQueries,
         IInstanceRepository instanceRepository,
+        IInstanceJobRepository instanceJobRepository,
         IMapper mapper
     )
     {
         _credentialQueries = credentialQueries;
         _instanceQueries = instanceQueries;
         _instanceRepository = instanceRepository;
+        _instanceJobRepository = instanceJobRepository;
         _mapper = mapper;
     }
 
@@ -132,6 +135,12 @@ public class UpdateInstancesFromCloudCommandHandler
                     tx
                 );
 
+                // Delete Instance_Job
+                var deletedInstJobs = _instanceJobRepository.DeleteByInstanceIds(
+                    instancesToDelete.Select(x => x.InstId).ToList(),
+                    conn,
+                    tx);
+
                 // Delete instances
                 var deleted = _instanceRepository.DeleteMultipleInstances(
                     instancesToDelete.Select(x => x.InstId).ToList(),
@@ -139,7 +148,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     tx
                 );
                 tx.Commit();
-                var affectedRows = inserted + updated + deleted;
+                var affectedRows = inserted + updated + deleted + deletedInstJobs;
                 return affectedRows;
             }
         }
