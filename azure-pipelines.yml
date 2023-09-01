@@ -36,7 +36,7 @@ stages:
         repositories:
         - p2server
       pool:
-        # vmImage: $(vmImageName)
+        vmImage: $(vmImageName)
         name: Default
       steps:
         - checkout: self
@@ -65,7 +65,7 @@ stages:
         repositories:
         - p2server
       pool:
-        # vmImage: $(vmImageName)
+        vmImage: $(vmImageName)
         name: Default
       steps:
         - checkout: self
