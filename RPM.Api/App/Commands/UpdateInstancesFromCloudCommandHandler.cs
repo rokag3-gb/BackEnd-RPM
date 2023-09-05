@@ -43,7 +43,7 @@ public class UpdateInstancesFromCloudCommandHandler
         {
             return -1;
         }
-        if(credential.IsEnabled == false)
+        if (credential.IsEnabled == false)
         {
             return 0;
         }
@@ -70,7 +70,7 @@ public class UpdateInstancesFromCloudCommandHandler
                 );
                 break;
             case "VEN-GCP":
-                fetchedInstanceList =  GetVMListFromGcloud(
+                fetchedInstanceList = GetVMListFromGcloud(
                     request.AccountId,
                     request.CredId,
                     credential.CredData
@@ -88,24 +88,27 @@ public class UpdateInstancesFromCloudCommandHandler
         var instancesToDelete = currentInstances
             .Where(x => !fetchedInstanceResourceIds.Contains(x.ResourceId))
             .ToList();
-        var instancesToUpdate = from currentInstance in currentInstances
-                    join fetchedInstance in fetchedInstanceList
-                    on currentInstance.ResourceId equals fetchedInstance.ResourceId
-                    select new Instance(){
-                        InstId = currentInstance.InstId,
-                        AccountId = currentInstance.AccountId,
-                        CredId = currentInstance.CredId,
-                        Vendor = currentInstance.Vendor,
-                        ResourceId = fetchedInstance.ResourceId,
-                        Name = fetchedInstance.Name,
-                        Region = fetchedInstance.Region,
-                        Type = fetchedInstance.Type,
-                        Tags = fetchedInstance.Tags,
-                        Info = fetchedInstance.Info,
-                        Note = currentInstance.Note,
-                        SavedAt = currentInstance.SavedAt,
-                        SaverId = currentInstance.SaverId
-                    };
+        var instancesToUpdate =
+            from currentInstance in currentInstances
+            join fetchedInstance in fetchedInstanceList
+                on currentInstance.ResourceId equals fetchedInstance.ResourceId
+            select new Instance()
+            {
+                InstId = currentInstance.InstId,
+                AccountId = currentInstance.AccountId,
+                CredId = currentInstance.CredId,
+                Vendor = currentInstance.Vendor,
+                ResourceId = fetchedInstance.ResourceId,
+                Name = fetchedInstance.Name,
+                Region = fetchedInstance.Region,
+                Type = fetchedInstance.Type,
+                Tags = fetchedInstance.Tags,
+                Info = fetchedInstance.Info,
+                Note = currentInstance.Note,
+                SavedAt = currentInstance.SavedAt,
+                SaverId = currentInstance.SaverId,
+                IsEnable = true
+            };
         var instancesToInsert = fetchedInstanceList
             .Where(x => !currentInstanceResourceIds.Contains(x.ResourceId))
             .ToList();
@@ -133,7 +136,7 @@ public class UpdateInstancesFromCloudCommandHandler
                 );
 
                 // Delete instances
-                var deleted = _instanceRepository.DeleteMultipleInstances(
+                var deleted = _instanceRepository.DisableMultipleInstances(
                     instancesToDelete.Select(x => x.InstId).ToList(),
                     conn,
                     tx
@@ -173,6 +176,7 @@ public class UpdateInstancesFromCloudCommandHandler
                     Tags = JsonSerializer.Serialize(vm.Data.Tags),
                     Info = JsonSerializer.Serialize(vm),
                     Note = "",
+                    IsEnable = true,
                 }
             );
         }
@@ -209,12 +213,17 @@ public class UpdateInstancesFromCloudCommandHandler
                     Tags = JsonSerializer.Serialize(i.Tags),
                     Info = JsonSerializer.Serialize(i),
                     Note = "",
+                    IsEnable = true,
                 };
             })
             .ToList();
     }
 
-    private IEnumerable<Instance> GetVMListFromGcloud(long accountId, long credId, string serviceAccountJson)
+    private IEnumerable<Instance> GetVMListFromGcloud(
+        long accountId,
+        long credId,
+        string serviceAccountJson
+    )
     {
         var gcloudClient = new GoogleCloudClient(serviceAccountJson);
         var computeEngines = gcloudClient.GetGcloudComputeEngines();
@@ -233,6 +242,7 @@ public class UpdateInstancesFromCloudCommandHandler
                         Tags = JsonSerializer.Serialize(i.Tags),
                         Info = JsonSerializer.Serialize(i),
                         Note = "",
+                        IsEnable = true,
                     }
             )
             .ToList();

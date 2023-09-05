@@ -171,6 +171,12 @@ public class InstanceRepository : IInstanceRepository
         return conn.Execute(queryTemplate, queryParams, transaction: tx);
     }
 
+    public int DisableMultipleInstances(IEnumerable<long> instanceIds, IDbConnection conn, IDbTransaction tx){
+        var queryTemplate = @$"update Instance set IsEnable = @isEnable where InstId = @instId";
+        var queryParams = instanceIds.Select(x => new { isEnable = false, instId = x });
+        return conn.Execute(queryTemplate, queryParams, transaction: tx);
+    }
+
     public IDbConnection GetConnection() => _rpmDbConn.CreateConnection();
 
     public Instance UpdateSingleInstanceNote(long instanceId, InstanceNoteModifyDto instance)

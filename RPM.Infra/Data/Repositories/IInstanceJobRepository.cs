@@ -6,4 +6,5 @@ public interface IInstanceJobRepository {
     
     InstanceJob CreateSingleInstanceJob(InstanceJobModifyDto instance);
     int DeleteSingleInstanceJob(long sNo);
+    int DeleteByInstanceIds(IEnumerable<long> instanceIds, IDbConnection conn, IDbTransaction tx);
 }
