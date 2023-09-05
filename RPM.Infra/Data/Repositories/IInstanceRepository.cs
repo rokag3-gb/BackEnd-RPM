@@ -15,6 +15,7 @@ public interface IInstanceRepository {
     int DeleteSingleInstance(long accountId, long instanceId);
     int DeleteMultipleInstances(IEnumerable<long> instanceIds);
     int DeleteMultipleInstances(IEnumerable<long> instanceIds, IDbConnection conn, IDbTransaction tx);
+    int DisableMultipleInstances(IEnumerable<long> instanceIds, IDbConnection conn, IDbTransaction tx);
 
     public IDbConnection GetConnection();
 }

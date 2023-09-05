@@ -135,20 +135,14 @@ public class UpdateInstancesFromCloudCommandHandler
                     tx
                 );
 
-                // Delete Instance_Job
-                var deletedInstJobs = _instanceJobRepository.DeleteByInstanceIds(
-                    instancesToDelete.Select(x => x.InstId).ToList(),
-                    conn,
-                    tx);
-
                 // Delete instances
-                var deleted = _instanceRepository.DeleteMultipleInstances(
+                var deleted = _instanceRepository.DisableMultipleInstances(
                     instancesToDelete.Select(x => x.InstId).ToList(),
                     conn,
                     tx
                 );
                 tx.Commit();
-                var affectedRows = inserted + updated + deleted + deletedInstJobs;
+                var affectedRows = inserted + updated + deleted;
                 return affectedRows;
             }
         }
