@@ -55,6 +55,6 @@ public class InstanceJobRepository : IInstanceJobRepository
     {
         var queryTemplate = @$"delete from Instance_Job where InstId = @instId";
         var queryParams = instanceIds.Select(x => new { instId = x });
-        return conn.Execute(queryTemplate, queryParams);
+        return conn.Execute(queryTemplate, queryParams, tx);
     }
 }
