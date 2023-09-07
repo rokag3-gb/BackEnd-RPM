@@ -18,12 +18,12 @@ public class InstanceQueries : IInstanceQueries
 
     public IEnumerable<Instance> GetInstances(
         long accountId, long? credId, string? vendor = null, string? resourceId = null,
-        string? name = null, string? region = null, string? type = null, bool? isEnable = false
+        string? name = null, string? region = null, string? type = null, bool? isEnable = true
     )
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
-            var template = BuildGetInstances(accountId, credId, vendor, resourceId, name, region, type);
+            var template = BuildGetInstances(accountId, credId, vendor, resourceId, name, region, type, isEnable);
             conn.Open();
             return conn.Query<Instance>(template.RawSql, template.Parameters).AsList();
         }
@@ -87,7 +87,7 @@ public class InstanceQueries : IInstanceQueries
                                                   string? name = null,
                                                   string? region = null,
                                                   string? type = null,
-                                                  bool? isEnable = false)
+                                                  bool? isEnable = true)
     {
         var queryTemplate = "select /**select**/ from Instance /**where**/ /**orderby**/";
         var selects =
