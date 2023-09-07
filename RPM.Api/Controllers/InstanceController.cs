@@ -55,7 +55,7 @@ public class InstanceController : ControllerBase
         _salesClient = salesClient;
     }
 
-    // Api for querying list of Credentials
+    // Api for querying list of instances
     [HttpGet]
     [Route("{accountId}/instances")]
     public async Task<IEnumerable<dynamic>> GetList(
@@ -64,7 +64,8 @@ public class InstanceController : ControllerBase
         [SwaggerParameter("리소스 ID", Required = false)] string? resourceId,
         [SwaggerParameter("리소스 이름", Required = false)] string? name,
         [SwaggerParameter("리전 코드", Required = false)] string? region,
-        [SwaggerParameter("리소스 유형", Required = false)] string? type
+        [SwaggerParameter("리소스 유형", Required = false)] string? type,
+        [SwaggerParameter("활성화 여부", Required = false)] bool? isEnable = true
     )
     {
         var instances = _instanceQueries.GetInstances(
@@ -74,7 +75,8 @@ public class InstanceController : ControllerBase
             resourceId,
             name,
             region,
-            type
+            type,
+            isEnable
         );
         var saverIdsSet = instances.Select(x => x.SaverId).ToHashSet();
         var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
@@ -215,7 +217,7 @@ public class InstanceController : ControllerBase
 
     [HttpGet]
     [Route("{accountId}/instance/{instanceId}/status")]
-    [SwaggerResponse(404, "ID 에 해당하는 인스턴가 없음")]
+    [SwaggerResponse(404, "ID 에 해당하는 인스턴스가 없음")]
     public async Task<ActionResult<InstancesStatusDto>> GetInstanceStatusById(
         [SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("인스턴스 ID", Required = false)] long instanceId
@@ -315,10 +317,7 @@ public class InstanceController : ControllerBase
                 PowerToggle = power
             }
         );
-        return new InstanceToggleResultDto(){
-            InstId = instanceId,
-            WasToggleSuccessful = result
-        };
+        return new InstanceToggleResultDto() { InstId = instanceId, WasToggleSuccessful = result };
     }
 
     [HttpDelete]
