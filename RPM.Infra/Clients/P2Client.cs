@@ -15,7 +15,8 @@ public interface IP2Client
         string jobName,
         string workflowYaml,
         string note,
-        string savedByUserId
+        string savedByUserId,
+        string token
     );
 
     void CreateScheduleForJob(
@@ -26,20 +27,22 @@ public interface IP2Client
         DateTime activateDate,
         DateTime expireDate,
         string note,
-        string savedByUserId
+        string savedByUserId,
+        string token
     );
 
     IEnumerable<JobScheduleData> GetSchedules(
         long accountId,
+        string token,
         IEnumerable<long> jobId,
         DateTime? activateDate = null,
         DateTime? expireDate = null,
         bool? isEnable = null
     );
 
-    void UpdateSchedule(long jobId, long schId, string saverUserId, ScheduleModifyDto schedule);
+    void UpdateSchedule(long jobId, long schId, string saverUserId, ScheduleModifyDto schedule, string token);
 
-    void DeleteSchedule(long scheduleId);
+    void DeleteSchedule(long scheduleId, string token);
 
     Task<IEnumerable<RunData>> GetRuns(
         IEnumerable<long> jobIds,
@@ -68,8 +71,8 @@ public interface IP2Client
         string? token
     );
 
-    void DeleteJob(long jobId);
-    Task<JobScheduleData?> GetSchedule(long schId);
+    void DeleteJob(long jobId, string token);
+    Task<JobScheduleData?> GetSchedule(long schId, string token);
 }
 
 public class P2Client : IP2Client
@@ -86,10 +89,11 @@ public class P2Client : IP2Client
         string jobName,
         string workflowYaml,
         string note,
-        string savedByUserId
-    )
+        string savedByUserId,
+        string token)
     {
         var jobClient = new JobCreateApiService.JobCreateApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var jobCreateReq = new JobCreateRequest()
         {
             AccountId = accountId,
@@ -100,7 +104,7 @@ public class P2Client : IP2Client
             IsEnable = true,
             SaveUserId = savedByUserId,
         };
-        var res = await jobClient.CreateAsync(jobCreateReq);
+        var res = await jobClient.CreateAsync(jobCreateReq, header);
         return res.JobId;
     }
 
@@ -112,10 +116,11 @@ public class P2Client : IP2Client
         DateTime activateDate,
         DateTime expireDate,
         string note,
-        string savedByUserId
-    )
+        string savedByUserId,
+        string token)
     {
         var client = new ScheduleCreateApiService.ScheduleCreateApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var request = new CreateSchedulesRequest() { JobId = jobId };
         request.CreateSchedules.Add(
             new CreateScheduleData()
@@ -130,17 +135,19 @@ public class P2Client : IP2Client
                 SaveUserId = savedByUserId,
             }
         );
-        var response = client.CreateSchedules(request);
+        var response = client.CreateSchedules(request, header);
     }
 
     public void UpdateSchedule(
         long jobId,
         long schId,
         string saverUserId,
-        ScheduleModifyDto schedule
+        ScheduleModifyDto schedule,
+        string token
     )
     {
         var client = new ScheduleUpdateApiService.ScheduleUpdateApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var request = new UpdateSchedulesRequest() { JobId = jobId };
         request.Schedules.Add(
             new UpdateScheduleData()
@@ -153,28 +160,29 @@ public class P2Client : IP2Client
                 ExpireDate = schedule.ExpireDate.ToString(),
                 Note = schedule.Note,
                 SaveUserId = saverUserId,
-            }
-        );
-        client.UpdateSchedule(request);
+            });
+        client.UpdateSchedule(request, header);
     }
 
-    public void DeleteSchedule( long scheduleId)
+    public void DeleteSchedule( long scheduleId, string token)
     {
         var client = new ScheduleDeleteApiService.ScheduleDeleteApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var request = new DeleteScheduleRequest();
         request.SchIds.Add(scheduleId);
-        client.DeleteSchedule(request);
+        client.DeleteSchedule(request, header);
     }
 
     public IEnumerable<JobScheduleData> GetSchedules(
         long accountId,
+        string token,
         IEnumerable<long>? jobIds = null,
         DateTime? activateDate = null,
         DateTime? expireDate = null,
-        bool? isEnable = null
-    )
+        bool? isEnable = null)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var schedsReq = new ScheduleListRequest();
         schedsReq.AccountIds.Add(accountId);
         if (jobIds != null)
@@ -186,20 +194,22 @@ public class P2Client : IP2Client
         if (isEnable != null)
             schedsReq.IsEnable = isEnable.Value;
 
-        var response = client.GetSchedules(schedsReq);
+        var response = client.GetSchedules(schedsReq, header);
         var list = response.Schedules.ToList();
         return list;
     }
 
-    public async Task<JobScheduleData?> GetSchedule(long schId)
+    public async Task<JobScheduleData?> GetSchedule(long schId, string token)
     {
         var client = new ScheduleGetApiService.ScheduleGetApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         try
         {
             var schedule = await client.GetScheduleAsync(new SingleScheduleGetRequest
             {
                 SchId = schId
-            });
+            }, 
+            header);
             return schedule;
         }
         catch (RpcException ex)
@@ -224,10 +234,7 @@ public class P2Client : IP2Client
     )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
-
-        var headers = new Grpc.Core.Metadata();
-        headers.Add("Authorization", $"Bearer {token}");
-
+        var headers = SetAuthorization(token);
         var request = new RunGetByJobRequest();
         request.PeriodFrom = from.ToString("o");
         request.PeriodTo = to.ToString("o");
@@ -247,10 +254,7 @@ public class P2Client : IP2Client
     )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
-
-        var headers = new Grpc.Core.Metadata();
-        headers.Add("Authorization", $"Bearer {token}");
-
+        var headers = SetAuthorization(token);
         var request = new RunGetLatestRequest();
 
         request.JobIds.AddRange(jobIds);
@@ -260,7 +264,7 @@ public class P2Client : IP2Client
         request.To = to?.ToString("o");
         request.RunState = runState;
 
-        var response = await client.GetLatestAsync(request);
+        var response = await client.GetLatestAsync(request, headers);
 
         return response?.Run;
     }
@@ -272,14 +276,11 @@ public class P2Client : IP2Client
         DateTime? to,
         long? offset,
         long? limit,
-        string? token
+        string token
     )
     {
         var client = new RunGetApiService.RunGetApiServiceClient(_grpcChannel);
-
-        var headers = new Grpc.Core.Metadata();
-        headers.Add("Authorization", $"Bearer {token}");
-
+        var headers = SetAuthorization(token);
         var request = new RunGetByJobRequest();
 
         request.JobIds.AddRange(jobIds);
@@ -308,20 +309,24 @@ public class P2Client : IP2Client
             request.Limit = limit.Value;
 
         var response = await client.GetListByJobAsync(request, headers);
-
-        //List<RunData> runDataList = new List<RunData>(response.Runs.Count);
-        //for (int i = 0; i < response.Runs.Count; i++)
-        //{
-        //    runDataList.Add(response.Runs[i]);
-        //}
-
         return response;
     }
 
-    public void DeleteJob(long jobId)
+    public void DeleteJob(long jobId, string token)
     {
         var client = new JobDeleteApiService.JobDeleteApiServiceClient(_grpcChannel);
+        var header = SetAuthorization(token);
         var request = new JobDeleteRequest(){ JobId = jobId };
-        client.Delete(request);
+        client.Delete(request, header);
+    }
+
+
+    private Metadata SetAuthorization(string token)
+    {
+        var metadata = new Metadata();
+        if (string.IsNullOrEmpty(token) == false)
+            metadata.Add("Authorization", $"Bearer {token.Replace("Bearer", "").Trim()}");
+
+        return metadata;
     }
 }

@@ -14,4 +14,5 @@ public class RegisterInstanceJobCommand : IRequest<IEnumerable<long>>
     public DateTime ExpireDate { get; set; }
     public string Note { get; set; }
     public string SavedByUserId { get; set; }
+    public string AuthorizationToken { get; set; }
 }

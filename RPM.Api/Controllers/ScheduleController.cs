@@ -92,7 +92,7 @@ public class ScheduleController : ControllerBase
                 SaverId = i.SaverId
             };
 
-        var sched = _p2Client.GetSchedules(accountId, jobIds);
+        var sched = _p2Client.GetSchedules(accountId, token, jobIds);
 
         var userList = await _iamClient.ResolveUserList(
             token,
@@ -139,7 +139,9 @@ public class ScheduleController : ControllerBase
     )
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _p2Client.UpdateSchedule(jobId, scheduleId, userId, schedule);
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+        _p2Client.UpdateSchedule(jobId, scheduleId, userId, schedule, token);
         return Ok();
     }
 
@@ -152,12 +154,15 @@ public class ScheduleController : ControllerBase
         [FromQuery, SwaggerParameter("", Required = true)] long instJobSNo
     )
     {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
         await _mediator.Send(
             new DeleteScheduleCommand()
             {
                 ScheduleId = scheduleId,
                 JobId = jobId,
-                InstJobSNo = instJobSNo
+                InstJobSNo = instJobSNo,
+                AuthorizationToken = token
             }
         );
         return Ok();
@@ -173,6 +178,7 @@ public class ScheduleController : ControllerBase
         [SwaggerParameter("검색 월", Required = true)] int month
     )
     {
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var snap = await _instanceSnapshotQueries.Get(accountId, instanceId, year, month);
         if (snap == null)
             yield break;
@@ -186,7 +192,7 @@ public class ScheduleController : ControllerBase
         DateTime from = new DateTime(year, month, 1);
         DateTime to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
         var schedules = _p2Client
-            .GetSchedules(accountId, jobIds, isEnable: true)
+            .GetSchedules(accountId, token, jobIds, isEnable: true)
             .Where(s =>
             {
                 var isValid = DateTime.TryParse(s.ActivateDate, out var activateDate);
@@ -276,7 +282,8 @@ public class ScheduleController : ControllerBase
     public async Task<ActionResult<dynamic?>> GetSchedule([SwaggerParameter("대상 조직 ID", Required = true)] long accountId,
         [SwaggerParameter("스케줄 ID", Required = true)] long schId)
     {
-        var schedule = await _p2Client.GetSchedule(schId);
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var schedule = await _p2Client.GetSchedule(schId, token);
         if (schedule == null)
             return Ok(null!);
 

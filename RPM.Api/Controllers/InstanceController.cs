@@ -158,6 +158,8 @@ public class InstanceController : ControllerBase
     )
     {
         var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var token = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
         var result = await _mediator.Send(
             new RegisterInstanceJobCommand()
             {
@@ -170,7 +172,8 @@ public class InstanceController : ControllerBase
                 SavedByUserId = userId ?? "",
                 ActivateDate = registerParams.ActivateDate,
                 ExpireDate = registerParams.ExpireDate,
-                CronExpressioon = registerParams.CronExpression
+                CronExpressioon = registerParams.CronExpression,
+                AuthorizationToken = token
             }
         );
         if (result != null)

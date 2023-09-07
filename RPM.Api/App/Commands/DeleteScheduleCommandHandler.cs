@@ -40,8 +40,8 @@ public class DeleteScheduleCommandHandler
         CancellationToken cancellationToken
     )
     {
-       _p2Client.DeleteSchedule(request.ScheduleId);
-       _p2Client.DeleteJob(request.JobId);
+       _p2Client.DeleteSchedule(request.ScheduleId, request.AuthorizationToken);
+       _p2Client.DeleteJob(request.JobId, request.AuthorizationToken);
        _instanceJobRepository.DeleteSingleInstanceJob(request.InstJobSNo);
         return true;
     }

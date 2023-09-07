@@ -110,7 +110,8 @@ public class RegisterInstanceJobCommandHandler
                         request.JobName,
                         finalYaml,
                         request.Note,
-                        request.SavedByUserId
+                        request.SavedByUserId,
+                        request.AuthorizationToken
                     );
                     var instJobIds = new List<long>();
                     _p2Client.CreateScheduleForJob(
@@ -121,7 +122,8 @@ public class RegisterInstanceJobCommandHandler
                         request.ActivateDate,
                         request.ExpireDate,
                         request.Note,
-                        request.SavedByUserId
+                        request.SavedByUserId,
+                        request.AuthorizationToken
                     );
                     foreach (var instance in instanceList)
                     {

@@ -71,8 +71,8 @@ namespace RPM.Api.Model
                 var prices = await _instancePriceQueries.Get(instanceJobs.Select(ij => ij.InstId));
                 var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
                                                    startPreviousMonthDate,
-                new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month), 23, 59, 59),
-                new[] { RunState.Success },
+                                                   new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month), 23, 59, 59),
+                                                   new[] { RunState.Success },
                                                    token);
                 var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
 
@@ -210,8 +210,8 @@ namespace RPM.Api.Model
             }
 
             var runs = await _p2Client.GetRuns(instanceJobs.Select(ij => ij.JobId),
-            startMonthDate,
-            new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
+                                               startMonthDate,
+                                               new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59),
                                                new[] { RunState.Success },
                                                token);
 
