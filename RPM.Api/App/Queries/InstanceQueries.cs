@@ -18,7 +18,7 @@ public class InstanceQueries : IInstanceQueries
 
     public IEnumerable<Instance> GetInstances(
         long accountId, long? credId, string? vendor = null, string? resourceId = null,
-        string? name = null, string? region = null, string? type = null
+        string? name = null, string? region = null, string? type = null, bool? isEnable = false
     )
     {
         using (var conn = _rpmDbConn.CreateConnection())
@@ -86,7 +86,8 @@ public class InstanceQueries : IInstanceQueries
                                                   string? resourceId = null,
                                                   string? name = null,
                                                   string? region = null,
-                                                  string? type = null)
+                                                  string? type = null,
+                                                  bool? isEnable = false)
     {
         var queryTemplate = "select /**select**/ from Instance /**where**/ /**orderby**/";
         var selects =
@@ -117,6 +118,9 @@ public class InstanceQueries : IInstanceQueries
         if (!string.IsNullOrEmpty(type))
         {
             builder = builder.Where("Type = @type", new { type = type });
+        }
+        if(isEnable.HasValue && isEnable.Value){
+            builder = builder.Where("IsEnable = @isEnable", new { isEnable = isEnable.Value });
         }
 
         builder = builder.OrderBy("SavedAt");
