@@ -168,6 +168,14 @@ namespace RPM.Api.Model
                     response.Add(item);
                 }
 
+                if (response.Count <= 0)
+                {
+                    response.Add(new InstanceCostDto
+                    { 
+                        SettlementMonth = dt.ToString("yyyy-MM")
+                    });
+                }
+
                 yield return response;
             }
         }
