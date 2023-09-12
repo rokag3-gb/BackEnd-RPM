@@ -60,7 +60,12 @@ public class GoogleCloudClient
         var vm = await client.GetAsync(projId, regionCode, instanceId);
         if (power)
         {
-            StartInstanceRequest request = new StartInstanceRequest { Instance = vm.ToString() };
+            StartInstanceRequest request = new StartInstanceRequest
+            {
+                Instance = vm.Name,
+                Project = projId,
+                Zone = regionCode
+            };
             try
             {
                 var response = client.Start(request);
@@ -68,12 +73,19 @@ public class GoogleCloudClient
             catch (RpcException e)
             {
                 Console.WriteLine($"Error starting instance: {e.Status.Detail}");
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.Trailers);
                 return false;
             }
         }
         else
         {
-            StopInstanceRequest request = new StopInstanceRequest { Instance = vm.ToString() };
+            StopInstanceRequest request = new StopInstanceRequest
+            {
+                Instance = vm.Name,
+                Project = projId,
+                Zone = regionCode
+            };
             try
             {
                 var response = client.Stop(request);
@@ -81,6 +93,8 @@ public class GoogleCloudClient
             catch (RpcException e)
             {
                 Console.WriteLine($"Error stopping instance: {e.Status.Detail}");
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.Trailers);
                 return false;
             }
         }
