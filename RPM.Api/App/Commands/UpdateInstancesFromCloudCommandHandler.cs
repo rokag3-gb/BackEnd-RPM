@@ -109,8 +109,11 @@ public class UpdateInstancesFromCloudCommandHandler
                 SaverId = currentInstance.SaverId,
                 IsEnable = true
             };
+        var instancesToInsertExceptList = fetchedInstanceList
+            .Where(x => currentInstanceResourceIds.Contains(x.ResourceId))
+            .ToList();
         var instancesToInsert = fetchedInstanceList
-            .Where(x => !currentInstanceResourceIds.Contains(x.ResourceId))
+            .Except(instancesToInsertExceptList)
             .ToList();
 
         // Insert new instances
@@ -122,8 +125,9 @@ public class UpdateInstancesFromCloudCommandHandler
             conn.Open();
             using (var tx = conn.BeginTransaction())
             {
-                var inserted = _instanceRepository.CreateMultipleInstances(
-                    toInsertMappedList,
+                // Delete instances
+                var deleted = _instanceRepository.DisableMultipleInstances(
+                    instancesToDelete.Select(x => x.InstId).ToList(),
                     conn,
                     tx
                 );
@@ -135,12 +139,12 @@ public class UpdateInstancesFromCloudCommandHandler
                     tx
                 );
 
-                // Delete instances
-                var deleted = _instanceRepository.DisableMultipleInstances(
-                    instancesToDelete.Select(x => x.InstId).ToList(),
+                var inserted = _instanceRepository.CreateMultipleInstances(
+                    toInsertMappedList,
                     conn,
                     tx
                 );
+
                 tx.Commit();
                 var affectedRows = inserted + updated + deleted;
                 return affectedRows;
