@@ -80,6 +80,24 @@ public class InstanceQueries : IInstanceQueries
         }
     }
 
+    public IEnumerable<Instance> GetInstancesByResourceIds(long accountId, IEnumerable<string> resourceIds)
+    {
+        using (var conn = _rpmDbConn.CreateConnection())
+        {
+            var queryTemplate = "select /**select**/ from Instance /**where**/";
+            var selects =
+                @"InstId, AccountId, CredId, Vendor, ResourceId, IsEnable, Name, Region, Type, Tags, Info, Note, SavedAt, SaverId";
+
+            var builder = new SqlBuilder().Select(selects);
+            builder = builder.Where("AccountId = @accId", new { accId = accountId });
+            builder = builder.Where("ResourceId IN @resourceIds", new { resourceIds = resourceIds });
+            var template = builder.AddTemplate(queryTemplate);
+
+            conn.Open();
+            return conn.Query<Instance>(template.RawSql, template.Parameters).AsList();
+        }
+    }
+
     private SqlBuilder.Template BuildGetInstances(long accountId,
                                                   long? credId,
                                                   string? vendor = null,

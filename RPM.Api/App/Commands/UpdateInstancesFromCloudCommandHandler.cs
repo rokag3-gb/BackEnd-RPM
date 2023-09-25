@@ -9,6 +9,7 @@ using System.Text.Json;
 using Azure.ResourceManager.Compute;
 using System.Linq;
 using AutoMapper;
+using Dapper;
 
 namespace RPM.Api.App.Commands;
 
@@ -83,8 +84,18 @@ public class UpdateInstancesFromCloudCommandHandler
             return 0;
         }
         var fetchedInstanceResourceIds = fetchedInstanceList.Select(x => x.ResourceId).ToList();
-        var currentInstances = _instanceQueries.GetInstances(request.AccountId, request.CredId);
+        var currentInstances = _instanceQueries.GetInstances(request.AccountId, request.CredId, isEnable: null).AsList();
+        var currentInstancesByResIds = _instanceQueries.GetInstancesByResourceIds(request.AccountId, fetchedInstanceResourceIds);
+        foreach(var instance in currentInstancesByResIds)
+        {
+           if(currentInstances.Any(x => x.ResourceId == instance.ResourceId)){
+            continue;
+           }else{
+            currentInstances.Add(instance);
+           }
+        }
         var currentInstanceResourceIds = currentInstances.Select(x => x.ResourceId).ToList();
+
         var instancesToDelete = currentInstances
             .Where(x => !fetchedInstanceResourceIds.Contains(x.ResourceId))
             .ToList();

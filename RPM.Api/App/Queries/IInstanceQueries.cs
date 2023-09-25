@@ -9,5 +9,6 @@ public interface IInstanceQueries {
         string? name = null, string? region = null, string? type = null, bool? isEnable = null);
     Instance? GetInstanceById(long accountId, long instanceId);
     IEnumerable<Instance> GetInstancesByIds(long accountId, IEnumerable<long> instanceIds);
+    IEnumerable<Instance> GetInstancesByResourceIds(long accountId, IEnumerable<string> resourceIds);
     Task<IEnumerable<Instance>> GetInstancesAsync(long accountId, long? credId = null, string? vendor = null, string? resourceId = null, string? name = null, string? region = null, string? type = null);
 }
