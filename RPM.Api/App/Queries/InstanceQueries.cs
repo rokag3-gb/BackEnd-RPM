@@ -80,7 +80,7 @@ public class InstanceQueries : IInstanceQueries
         }
     }
 
-    public IEnumerable<Instance> GetInstancesByResourceIds(long accountId, IEnumerable<long> resourceIds)
+    public IEnumerable<Instance> GetInstancesByResourceIds(long accountId, IEnumerable<string> resourceIds)
     {
         using (var conn = _rpmDbConn.CreateConnection())
         {
