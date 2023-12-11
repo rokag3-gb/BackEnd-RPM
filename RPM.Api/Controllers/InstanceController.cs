@@ -15,6 +15,7 @@ using RPM.Infra.Clients;
 using System.Text.Json;
 using Azure.Identity;
 using RPM.Api.Model;
+using Grpc.Core;
 
 namespace RPM.Api.Controllers;
 
@@ -262,10 +263,31 @@ public class InstanceController : ControllerBase
                 break;
             case "VEN-GCP":
                 var gcp = new GoogleCloudClient(credential.CredData);
-                vmStatus = await gcp.GetGcloudComputeEngineStatus(
-                    instance.Region,
-                    instance.ResourceId
-                );
+                try
+                {
+                    vmStatus = await gcp.GetGcloudComputeEngineStatus(
+                        instance.Region,
+                        instance.ResourceId
+                    );
+                }
+                catch (RpcException e)
+                {
+                    if (e.Status.StatusCode.ToString() == "NotFound")
+                    {
+                        vmStatus = new InstancesStatusDto
+                        {
+                            Status = "notfound",
+                            StatusCodeFromVendor = e.Status.Detail
+                        };
+                        return NotFound(vmStatus);
+                    }
+                    HttpContext.Response.StatusCode = 500;
+                    return new  InstancesStatusDto
+                    {
+                        Status = e.Status.StatusCode.ToString(),
+                        StatusCodeFromVendor = e.Status.Detail
+                    };
+                }
                 break;
         }
         return vmStatus;
