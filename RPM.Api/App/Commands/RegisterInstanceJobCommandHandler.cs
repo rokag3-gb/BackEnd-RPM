@@ -94,7 +94,7 @@ public class RegisterInstanceJobCommandHandler
                     var actName = request.ActionCode == "ACC-OFF" ? "Turn Off" : "Turn On";
                     var dag = deserializer.Deserialize<Job>(fileContent);
                     dag.InputValues["actionCode"] = $"--action-code \"{request.ActionCode}\"";
-                    dag.InputValues["actionName"] = $"--action-name {actName}";
+                    dag.InputValues["actionName"] = $"--action-name \"{actName}\"";
                     dag.InputValues["instJson"] =
                         $"--vm-list-json-data {JsonSerializer.Serialize(instanceListStripped)}";
                     dag.InputValues["credJson"] =
