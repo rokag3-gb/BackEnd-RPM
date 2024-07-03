@@ -1,4 +1,4 @@
-FROM golang:1.20 as chisel
+FROM golang:1.21 as chisel
 
 RUN git clone --depth 1 -b main https://github.com/canonical/chisel /opt/chisel
 WORKDIR /opt/chisel
