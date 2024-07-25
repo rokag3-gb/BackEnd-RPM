@@ -16,6 +16,7 @@ using System.Text.Json;
 using Azure.Identity;
 using RPM.Api.Model;
 using Grpc.Core;
+using Microsoft.Identity.Client;
 
 namespace RPM.Api.Controllers;
 
@@ -260,6 +261,9 @@ public class InstanceController : ControllerBase
                     instanceInfo.GetProperty("Id").GetProperty("ResourceGroupName").GetString(),
                     instance.Name
                 );
+                if (vmStatus.Status == "credential-invalid"){
+                    HttpContext.Response.StatusCode = 401;
+                }
                 break;
             case "VEN-GCP":
                 var gcp = new GoogleCloudClient(credential.CredData);
@@ -282,7 +286,7 @@ public class InstanceController : ControllerBase
                         return NotFound(vmStatus);
                     }
                     HttpContext.Response.StatusCode = 500;
-                    return new  InstancesStatusDto
+                    return new InstancesStatusDto
                     {
                         Status = e.Status.StatusCode.ToString(),
                         StatusCodeFromVendor = e.Status.Detail

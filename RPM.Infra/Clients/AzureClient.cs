@@ -3,6 +3,7 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Resources;
+using Microsoft.Identity.Client;
 using RPM.Domain.Dto;
 
 namespace RPM.Infra.Clients;
@@ -36,11 +37,24 @@ public class AzureClient
 
     public async Task<InstancesStatusDto> GetAzureVMStatus(string rgName, string vmName)
     {
-        // Create an instance of the ComputeManagementClient using your Azure credentials
-        ArmClient armClient = new ArmClient(_credential);
+       
+        SubscriptionResource subscription;
+        try
+        {
+             // Create an instance of the ComputeManagementClient using your Azure credentials
+            ArmClient armClient = new ArmClient(_credential);
+            // Get the VM by resource group name and VM name
+            subscription = await armClient.GetDefaultSubscriptionAsync();
+        }
+        catch (MsalServiceException)
+        {
+            return new InstancesStatusDto()
+            {
+                Status = "credential-invalid",
+                StatusCodeFromVendor = ""
+            };
+        }
 
-        // Get the VM by resource group name and VM name
-        SubscriptionResource subscription = await armClient.GetDefaultSubscriptionAsync();
         // first we need to get the resource group
         ResourceGroupResource resourceGroup = await subscription
             .GetResourceGroups()
