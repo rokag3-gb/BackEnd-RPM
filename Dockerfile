@@ -5,12 +5,12 @@ WORKDIR /opt/chisel
 RUN go build ./cmd/chisel
 
 # https://hub.docker.com/_/microsoft-dotnet
-FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
 
 COPY --from=chisel /opt/chisel/chisel /usr/bin/
 RUN mkdir /rootfs \
-    && chisel cut --release "ubuntu-22.04" --root /rootfs \
-        libicu70_libs libssl3_libs 
+    && chisel cut --release "ubuntu-24.04" --root /rootfs \
+        libicu74_libs libssl3t64_libs 
 
 WORKDIR /source
 
@@ -20,7 +20,7 @@ WORKDIR /source/RPM.Api
 RUN dotnet publish -c Release -o /app --self-contained false
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV TZ=Asia/Seoul
 USER root
