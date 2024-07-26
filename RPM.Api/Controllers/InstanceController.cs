@@ -247,6 +247,9 @@ public class InstanceController : ControllerBase
                     credData.GetProperty("region_code").GetString(),
                     instance.ResourceId
                 );
+                 if (vmStatus.Status == "notfound"){
+                    HttpContext.Response.StatusCode = 404;
+                }
                 break;
             case "VEN-AZT":
                 var azure = new AzureClient(

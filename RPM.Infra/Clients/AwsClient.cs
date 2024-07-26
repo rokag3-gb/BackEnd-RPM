@@ -47,13 +47,26 @@ public class AWSClient
         {
             InstanceIds = new List<string> { instanceId }
         };
-
-        // Get the response with the list of instances
-        DescribeInstancesResponse response = await ec2Client.DescribeInstancesAsync(request);
-
-        // Iterate through the reservations and instances
-        var status = response.Reservations.First().Instances.First().State.Name;
-        return new InstancesStatusDto() { Status = status, StatusCodeFromVendor = status };
+        DescribeInstancesResponse response;
+        try
+        {
+            // Get the response with the list of instances
+            response = await ec2Client.DescribeInstancesAsync(request);
+            // Iterate through the reservations and instances
+            var status = response.Reservations.First().Instances.First().State.Name;
+            return new InstancesStatusDto() { Status = status, StatusCodeFromVendor = status };
+        }
+        catch (AmazonEC2Exception e)
+        {
+            if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return new InstancesStatusDto() { Status = "notfound", StatusCodeFromVendor = e.ErrorCode };
+            }
+            else
+            {
+                return new InstancesStatusDto() { Status = "error", StatusCodeFromVendor = e.ErrorCode };
+            }
+        }
     }
 
     public async Task<bool> ToggleAwsVMPowerAsync(string regionCode, string instanceId, bool power)
