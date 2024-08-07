@@ -11,7 +11,7 @@ trigger:
 - develop
 
 variables:
-  TargetFramework: 'net7.0'
+  TargetFramework: 'net8.0'
   BuildConfiguration: 'Release'
   DockerImageName: 'rpm-2023/rpmapp/rpmapi'
   projPath: '$(Build.SourcesDirectory)/BackEnd-RPM/RPM.Api'
@@ -75,7 +75,7 @@ stages:
           clean: true
         - task: UseDotNet@2
           inputs:
-            version: '7.x'
+            version: '8.x'
         - task: DotNetCoreCLI@2
           displayName: Restore dependencies
           inputs:
