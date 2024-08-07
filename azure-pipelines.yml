@@ -80,7 +80,7 @@ stages:
           displayName: Restore dependencies
           inputs:
             command: 'restore'
-            projects: '**/*.csproj'
+            projects: 'RPM.*/*.csproj'
             workingDirectory: $(projPath)
         - script: dotnet tool restore
           displayName: Restore Tools
