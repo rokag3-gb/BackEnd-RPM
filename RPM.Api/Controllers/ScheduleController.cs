@@ -10,6 +10,7 @@ using RPM.Domain.Dto;
 using Quartz;
 using System.Security.Claims;
 using RPM.Api.App.Commands;
+using RPM.Domain.Models;
 using Microsoft.Identity.Client;
 using P2.API.Services.Commons;
 
@@ -67,9 +68,9 @@ public class ScheduleController : ControllerBase
         var instJobs = _instanceJobQueries.GetInstanceJobs(accountId, instanceIds);
         var jobIds = instJobs.Select((x) => x.JobId).ToList();
         var instIdsFromInstJobs = instJobs.Select((x) => x.InstId).ToList();
-        var venderList = await _salesClient.GetKindCodeChilds(token, "VEN");
-        var accCodeList = await _salesClient.GetKindCodeChilds(token, "ACC");
-        var instances = _instanceQueries.GetInstancesByIds(accountId, instIdsFromInstJobs);
+        var venderList = await _salesClient.GetKindCodeChilds(token, "VEN") ?? Enumerable.Empty<Code>();
+        var accCodeList = await _salesClient.GetKindCodeChilds(token, "ACC") ?? Enumerable.Empty<Code>();
+        var instances = _instanceQueries.GetInstancesByIds(accountId, instIdsFromInstJobs) ?? Enumerable.Empty<Instance>();
         var instancesJoined =
             from i in instances
             join v in venderList on i.Vendor equals v.CodeKey
