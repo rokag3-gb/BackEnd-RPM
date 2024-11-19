@@ -93,38 +93,39 @@ public class ScheduleController : ControllerBase
                 SaverId = i.SaverId
             };
 
-        var sched = _p2Client.GetSchedules(accountId, token, jobIds);
+        var sched = _p2Client.GetSchedules(accountId, token, jobIds) ?? Enumerable.Empty<JobScheduleData>();
 
         var userList = await _iamClient.ResolveUserList(
             token,
             sched.Select((x) => x.SaveUserId).ToHashSet()
-        );
+        ) ?? Enumerable.Empty<UserListItem>();
         var joined =
             from ij in instJobs
             join s in sched on ij.JobId equals s.JobId
             join i in instancesJoined on ij.InstId equals i.InstId
-            join u in userList on s.SaveUserId equals u.Id
+            join u in userList on s.SaveUserId equals u.Id into userGroup
+            from u in userGroup.DefaultIfEmpty()
             join ac in accCodeList on ij.ActionCode equals ac.CodeKey
             select new ScheduleDto()
             {
-                InstId = ij.InstId,
-                Instance = i,
-                SchId = s.SchId,
-                AccountId = s.AccountId,
-                JobId = s.JobId,
-                Cron = s.Cron,
-                IsEnable = s.IsEnable,
-                ActivateDate = s.ActivateDate,
-                ExpireDate = s.ExpireDate,
-                Note = s.Note,
-                SaveDate = s.SaveDate,
-                SaveUserId = s.SaveUserId,
-                SaveUserName = u.Username,
-                ScheduleName = s.ScheduleName,
-                SNo = ij.SNo,
-                ActionCode = ij.ActionCode,
-                ActionName = ac.Name,
-                InstanceJobSavedAt = ij.SavedAt
+            InstId = ij.InstId,
+            Instance = i,
+            SchId = s.SchId,
+            AccountId = s.AccountId,
+            JobId = s.JobId,
+            Cron = s.Cron,
+            IsEnable = s.IsEnable,
+            ActivateDate = s.ActivateDate,
+            ExpireDate = s.ExpireDate,
+            Note = s.Note,
+            SaveDate = s.SaveDate,
+            SaveUserId = s.SaveUserId,
+            SaveUserName = u?.Username,
+            ScheduleName = s.ScheduleName,
+            SNo = ij.SNo,
+            ActionCode = ij.ActionCode,
+            ActionName = ac.Name,
+            InstanceJobSavedAt = ij.SavedAt
             };
 
         return joined;
