@@ -20,11 +20,11 @@ variables:
   ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
     latestTag: "latest"
     tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
-    openApiServerUrl: "gw.cloudmt.co.kr/rpm"
+    openApiServerUrl: "gw.ahnlabcloudmate.com/rpm"
   ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
     latestTag: "develop"
     tag: '$(Build.SourceBranchName)-$(Build.BuildId)'
-    openApiServerUrl: "dev.gw.cloudmt.co.kr/rpm"
+    openApiServerUrl: "dev.gw.ahnlabcloudmate.com/rpm"
 
 stages:
   - stage: Build
@@ -104,7 +104,7 @@ stages:
         - script: |
             cp $(projPath)/openapi.json $(docsSrcPath)/content/ko/json/rpmapi-$(Build.SourceBranchName).json
             git config user.name "RPM API Pipeline"
-            git config user.email "sdev@cloudmt.co.kr"
+            git config user.email "sdev@ahnlabcloudmate.com"
             git add content/ko/json/rpmapi-$(Build.SourceBranchName).json
             git commit -m "Update RPM API OpenAPI Doc - Build ID: $(Build.BuildId)"
             git push origin HEAD:main
